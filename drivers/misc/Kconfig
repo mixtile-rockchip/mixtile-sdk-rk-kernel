@@ -465,6 +465,14 @@ config MISC_RTSX
 	tristate
 	default MISC_RTSX_PCI || MISC_RTSX_USB
 
+config ROCKCHIP_PCIE_RMD
+	depends on PCI
+	depends on ARCH_ROCKCHIP
+	tristate "Rockchip PCIe remote memory demo driver"
+	help
+           Enable this configuration option to enable the host side function driver
+	   for Rockchip's remote memory demo driver.
+
 config UID_SYS_STATS
 	bool "Per-UID statistics"
 	depends on PROFILING && TASK_XACCT && TASK_IO_ACCOUNTING
