@@ -108,6 +108,7 @@ config PCIE_DW_DMATEST
 config PCIE_DW_ROCKCHIP_EP
 	bool "Rockchip DesignWare PCIe EP controller"
 	select PCIE_DW
+	select PCIE_DW_HOST
 	depends on ARCH_ROCKCHIP
 	depends on OF
 	help
