@@ -139,6 +139,35 @@ static int rockchip_p3phy_rk3588_init(struct rockchip_p3phy_priv *priv)
 	int ret = 0;
 	u32 reg;
 
+	/* PHY0 & PHY1  use internal clock */
+	regmap_write(priv->phy_grf, 0x118, 0x0 | (0x1 << 18));
+	regmap_write(priv->phy_grf, 0x218, 0x0 | (0x1 << 18));
+
+#if 0	/* set 0 for SRNS_ENABLE, 1 SRIS */
+	/* enable phy0_mplla_ssc_en and phy0_mpllb_ssc_en since the source mpll has no ssc */
+	regmap_write(priv->phy_grf, 0x011C, (0x1 << 1 | 0x1 << 5) | ((0x1 << 1 | 0x1 << 5) << 16));
+	/* enable phy0、1_mplla_ssc_en and phy1_mpllb_ssc_en since the source mpll has no ssc */
+	regmap_write(priv->phy_grf, 0x021C, (0x1 << 1 | 0x1 << 5) | ((0x1 << 1 | 0x1 << 5) << 16));
+
+	/* phy0 lane0 sris_mode_en*/
+	regmap_write(priv->phy_grf, 0x1004, (0x1 << 6) | (0x1 << 22));
+	/* phy0 lane1 sris_mode_en*/
+	regmap_write(priv->phy_grf, 0x1104, (0x1 << 6) | (0x1 << 22));
+	/* phy1 lane0 sris_mode_en*/
+	regmap_write(priv->phy_grf, 0x2004, (0x1 << 6) | (0x1 << 22));
+	/* phy1 lane1 sris_mode_en*/
+	regmap_write(priv->phy_grf, 0x2104, (0x1 << 6) | (0x1 << 22));
+#endif
+
+	/* phy0_rx0_cmn_refclk_mod */
+	regmap_write(priv->phy_grf, 0x1004, (0x0) | (0x1 << 23));
+	/* phy0_rx1_cmn_refclk_mod */
+	regmap_write(priv->phy_grf, 0x1104, (0x0) | (0x1 << 23));
+	/* phy1_rx0_cmn_refclk_mod */
+	regmap_write(priv->phy_grf, 0x2004, (0x0) | (0x1 << 23));
+	/* phy1_rx1_cmn_refclk_mod */
+	regmap_write(priv->phy_grf, 0x2104, (0x0) | (0x1 << 23));
+
 	/* Deassert PCIe PMA output clamp mode */
 	regmap_write(priv->phy_grf, RK3588_PCIE3PHY_GRF_CMN_CON0,
 		     (0x1 << 8) | (0x1 << 24));

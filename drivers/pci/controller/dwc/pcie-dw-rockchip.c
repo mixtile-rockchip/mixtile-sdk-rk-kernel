@@ -2117,6 +2117,11 @@ retry_regulator:
 	}
 	INIT_WORK(&rk_pcie->hot_rst_work, rk_pcie_hot_rst_work);
 
+#if 0	/* set 0 for SRNS_ENABLE, 1 SRIS */
+	/* app_sris_mode */
+	rk_pcie_writel_apb(rk_pcie, 0x0, (0x1 << 11) | (0x1 << 27));
+#endif
+
 	switch (rk_pcie->mode) {
 	case RK_PCIE_RC_TYPE:
 		ret = rk_add_pcie_port(rk_pcie, pdev);
