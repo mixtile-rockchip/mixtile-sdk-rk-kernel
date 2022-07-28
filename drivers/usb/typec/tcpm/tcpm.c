@@ -852,7 +852,6 @@ static enum typec_cc_status tcpm_rp_cc(struct tcpm_port *port)
 static void tcpm_ams_finish(struct tcpm_port *port)
 {
 	tcpm_log(port, "AMS %s finished", tcpm_ams_str[port->ams]);
-
 	if (port->pd_capable && port->pwr_role == TYPEC_SOURCE) {
 		if (port->negotiated_rev >= PD_REV30)
 			tcpm_set_cc(port, SINK_TX_OK);
@@ -923,6 +922,7 @@ void tcpm_pd_transmit_complete(struct tcpm_port *port,
 			       enum tcpm_transmit_status status)
 {
 	tcpm_log(port, "PD TX complete, status: %u", status);
+	printk("%s PD TX complete, status: %u", __func__, status);
 	port->tx_status = status;
 	complete(&port->tx_complete);
 }
@@ -1139,6 +1139,7 @@ static int tcpm_pd_send_source_caps(struct tcpm_port *port)
 	u32 pdo;
 	unsigned int i, nr_pdo = 0;
 
+	printk("%s\n", __func__);
 	memset(&msg, 0, sizeof(msg));
 
 	for (i = 0; i < port->nr_src_pdo; i++) {
@@ -1176,6 +1177,7 @@ static int tcpm_pd_send_sink_caps(struct tcpm_port *port)
 	u32 pdo;
 	unsigned int i, nr_pdo = 0;
 
+	printk("%s\n", __func__);
 	memset(&msg, 0, sizeof(msg));
 
 	for (i = 0; i < port->nr_snk_pdo; i++) {
@@ -1255,12 +1257,18 @@ static void tcpm_set_state(struct tcpm_port *port, enum tcpm_state state,
 		tcpm_log(port, "pending state change %s -> %s @ %u ms [%s %s]",
 			 tcpm_states[port->state], tcpm_states[state], delay_ms,
 			 pd_rev[port->negotiated_rev], tcpm_ams_str[port->ams]);
+		printk("pending state change %s -> %s @ %u ms [%s %s]\n",
+			 tcpm_states[port->state], tcpm_states[state], delay_ms,
+			 pd_rev[port->negotiated_rev], tcpm_ams_str[port->ams]);
 		port->delayed_state = state;
 		mod_tcpm_delayed_work(port, delay_ms);
 		port->delayed_runtime = ktime_add(ktime_get(), ms_to_ktime(delay_ms));
 		port->delay_ms = delay_ms;
 	} else {
 		tcpm_log(port, "state change %s -> %s [%s %s]",
+			 tcpm_states[port->state], tcpm_states[state],
+			 pd_rev[port->negotiated_rev], tcpm_ams_str[port->ams]);
+		printk("state change %s -> %s [%s %s]\n",
 			 tcpm_states[port->state], tcpm_states[state],
 			 pd_rev[port->negotiated_rev], tcpm_ams_str[port->ams]);
 		port->delayed_state = INVALID_STATE;
@@ -2227,6 +2235,7 @@ static int tcpm_validate_caps(struct tcpm_port *port, const u32 *pdo,
 {
 	enum pdo_err err_index = tcpm_caps_err(port, pdo, nr_pdo);
 
+	printk("%s\n", __func__);
 	if (err_index != PDO_NO_ERR) {
 		tcpm_log_force(port, " %s", pdo_err_msg[err_index]);
 		return -EINVAL;
@@ -2352,6 +2361,7 @@ static void tcpm_pd_handle_state(struct tcpm_port *port,
 				 enum tcpm_ams ams,
 				 unsigned int delay_ms)
 {
+	printk("%s state=%d\n", __func__, port->state);
 	switch (port->state) {
 	case SRC_READY:
 	case SNK_READY:
@@ -2384,6 +2394,7 @@ static void tcpm_pd_handle_msg(struct tcpm_port *port,
 			       enum pd_msg_request message,
 			       enum tcpm_ams ams)
 {
+	printk("%s state=%d\n", __func__, port->state);
 	switch (port->state) {
 	case SRC_READY:
 	case SNK_READY:
@@ -2417,7 +2428,8 @@ static void tcpm_pd_data_request(struct tcpm_port *port,
 {
 	enum pd_data_msg_type type = pd_header_type_le(msg->header);
 	unsigned int cnt = pd_header_cnt_le(msg->header);
-	unsigned int rev = pd_header_rev_le(msg->header);
+	//unsigned int rev = pd_header_rev_le(msg->header);
+	unsigned int rev = 1;
 	unsigned int i;
 	enum frs_typec_current partner_frs_current;
 	bool frs_enable;
@@ -2428,6 +2440,8 @@ static void tcpm_pd_data_request(struct tcpm_port *port,
 		tcpm_ams_finish(port);
 		mod_vdm_delayed_work(port, 0);
 	}
+
+	printk("%s type=%d, cnt=%d, rev=%d, pwr_role=%d, state=%d\n", __func__, type, cnt, rev, port->pwr_role, port->state);
 
 	switch (type) {
 	case PD_DATA_SOURCE_CAP:
@@ -2619,6 +2633,7 @@ static void tcpm_pd_ctrl_request(struct tcpm_port *port,
 		mod_vdm_delayed_work(port, 0);
 	}
 
+	printk("%s type=%d state=%d\n", __func__, type, port->state);
 	switch (type) {
 	case PD_CTRL_GOOD_CRC:
 	case PD_CTRL_PING:
@@ -2936,6 +2951,8 @@ static void tcpm_pd_rx_handler(struct kthread_work *work)
 
 	tcpm_log(port, "PD RX, header: %#x [%d]", le16_to_cpu(msg->header),
 		 port->attached);
+	
+	printk("%s PD RX, header: %#x attached:[%d], type:%d", __func__, le16_to_cpu(msg->header), port->attached, pd_header_type_le(msg->header));
 
 	if (port->attached) {
 		enum pd_ctrl_msg_type type = pd_header_type_le(msg->header);
@@ -2982,6 +2999,7 @@ void tcpm_pd_receive(struct tcpm_port *port, const struct pd_message *msg)
 {
 	struct pd_rx_event *event;
 
+	printk("%s\n", __func__);
 	event = kzalloc(sizeof(*event), GFP_ATOMIC);
 	if (!event)
 		return;
@@ -2998,6 +3016,7 @@ static int tcpm_pd_send_control(struct tcpm_port *port,
 {
 	struct pd_message msg;
 
+	printk("%s\n", __func__);
 	memset(&msg, 0, sizeof(msg));
 	msg.header = PD_HEADER_LE(type, port->pwr_role,
 				  port->data_role,
@@ -3414,6 +3433,7 @@ static int tcpm_pd_send_request(struct tcpm_port *port)
 	int ret;
 	u32 rdo;
 
+	printk("%s\n", __func__);
 	ret = tcpm_pd_build_request(port, &rdo);
 	if (ret < 0)
 		return ret;
@@ -3899,6 +3919,7 @@ static void run_state_machine(struct tcpm_port *port)
 	u32 current_limit;
 	bool adjust;
 
+	printk("###run_state_machine machine=%d####\n", port->state);
 	port->enter_state = port->state;
 	switch (port->state) {
 	case TOGGLING:
@@ -4011,7 +4032,7 @@ static void run_state_machine(struct tcpm_port *port)
 		typec_set_pwr_opmode(port->typec_port, opmode);
 		port->pwr_opmode = TYPEC_PWR_MODE_USB;
 		port->caps_count = 0;
-		port->negotiated_rev = (((port->typec_caps.pd_revision >> 8) & 0xff) - 1);
+		port->negotiated_rev = PD_REV20;
 		port->message_id = 0;
 		port->rx_msgid = -1;
 		port->explicit_contract = false;
@@ -4262,7 +4283,7 @@ static void run_state_machine(struct tcpm_port *port)
 					      port->cc2 : port->cc1);
 		typec_set_pwr_opmode(port->typec_port, opmode);
 		port->pwr_opmode = TYPEC_PWR_MODE_USB;
-		port->negotiated_rev = (((port->typec_caps.pd_revision >> 8) & 0xff) - 1);
+		port->negotiated_rev = 1;
 		port->message_id = 0;
 		port->rx_msgid = -1;
 		port->explicit_contract = false;
@@ -4334,8 +4355,10 @@ static void run_state_machine(struct tcpm_port *port)
 		 * were already in a stable contract before this boot.
 		 * Do this only once.
 		 */
+		printk("####SNK_WAIT_CAPABILITIES######vbus_never_low = %d\n", port->vbus_never_low);
 		if (port->vbus_never_low) {
 			port->vbus_never_low = false;
+			//tcpm_pd_send_control(port, PD_CTRL_SOFT_RESET);
 			tcpm_set_state(port, SNK_SOFT_RESET,
 				       timer_val_msecs);
 		} else {
@@ -4618,7 +4641,7 @@ static void run_state_machine(struct tcpm_port *port)
 	case SOFT_RESET_SEND:
 		port->message_id = 0;
 		port->rx_msgid = -1;
-		port->tcpc->set_pd_rx(port->tcpc, true);
+		printk("####SOFT_RESET_SEND######\n");
 		if (tcpm_pd_send_control(port, PD_CTRL_SOFT_RESET))
 			tcpm_set_state_cond(port, hard_reset_state(port), 0);
 		else
@@ -4977,6 +5000,11 @@ static void _tcpm_cc_change(struct tcpm_port *port, enum typec_cc_status cc1,
 
 	tcpm_log_force(port,
 		       "CC1: %u -> %u, CC2: %u -> %u [state %s, polarity %d, %s]",
+		       old_cc1, cc1, old_cc2, cc2, tcpm_states[port->state],
+		       port->polarity,
+		       tcpm_port_is_disconnected(port) ? "disconnected"
+						       : "connected");
+	printk("CC1: %u -> %u, CC2: %u -> %u [state %s, polarity %d, %s]\n",
 		       old_cc1, cc1, old_cc2, cc2, tcpm_states[port->state],
 		       port->polarity,
 		       tcpm_port_is_disconnected(port) ? "disconnected"
@@ -5438,6 +5466,7 @@ static void tcpm_pd_event_handler(struct kthread_work *work)
 					      event_work);
 	u32 events;
 
+	printk("%s\n", __func__);
 #ifdef CONFIG_NO_GKI
 	mutex_lock(&port->pd_handler_lock);
 #endif
