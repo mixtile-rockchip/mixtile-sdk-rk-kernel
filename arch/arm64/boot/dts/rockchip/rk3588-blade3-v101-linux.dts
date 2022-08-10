@@ -136,23 +136,13 @@
 		vin-supply = <&avcc_1v8_s0>;
 	};
 
-	vcc_1v1_nldo_s3: vcc-1v1-nldo-s3 {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_1v1_nldo_s3";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1100000>;
-		regulator-max-microvolt = <1100000>;
-		vin-supply = <&vcc5v0_sys>;
-	};
-
 	vcc3v3_pcie30: vcc3v3-pcie30 {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc3v3_pcie30";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		enable-active-high;
-		gpios = <&gpio2 RK_PC5 GPIO_ACTIVE_HIGH>;
+		gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <5000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
@@ -216,6 +206,16 @@
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc12v_dcin>;
+	};
+
+	vcc_1v1_nldo_s3: vcc-1v1-nldo-s3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_1v1_nldo_s3";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1100000>;
+		regulator-max-microvolt = <1100000>;
+		vin-supply = <&vcc5v0_sys>;
 	};
 
 	vcc5v0_usbdcin: vcc5v0-usbdcin {
@@ -550,7 +550,7 @@
 	svid = <0xff01>;	// linux/usb/typec_dp.h:USB_TYPEC_DP_SID
 	sbu1-dc-gpios = <&gpio4 RK_PA4 GPIO_ACTIVE_HIGH>;
 	sbu2-dc-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_HIGH>;
-/*
+
 	port {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -563,7 +563,7 @@
 			reg = <1>;
 			remote-endpoint = <&dp1_altmode_mux>;
 		};
-	};*/
+	};
 };
 
 &usbdp_phy1_dp {
@@ -600,7 +600,7 @@
 
 &usbdrd_dwc3_1 {
 	status = "okay";
-/*
+
 	dr_mode = "otg";
 	usb-role-switch;
 	port {
@@ -610,7 +610,7 @@
 			reg = <0>;
 			remote-endpoint = <&usbc1_role_sw>;
 		};
-	};*/
+	};
 };
 
 &vdpu {
@@ -762,7 +762,6 @@
 		};
 	};
 
-/*
 	usbc1: fusb302@22 {
 		compatible = "fcs,fusb302";
 		reg = <0x22>;
@@ -793,8 +792,7 @@
 			try-power-role = "sink";
 			op-sink-microwatt = <15000000>;
 			sink-pdos =
-				// <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
-				<PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)
+				<PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)
 				PDO_VAR(5000, 20000, 1000)
 				PDO_PPS_APDO(5000, 20000, 1000)>;
 			source-pdos =
@@ -830,7 +828,7 @@
 				};
 			};
 		};
-	};*/
+	};
 };
 
 &i2c3 {
@@ -949,36 +947,27 @@
 };
 
 &pcie30phy {
-	rockchip,pcie30-phymode = <PHY_MODE_PCIE_AGGREGATION>; /* PCIe3x4 */
-	status = "disabled";
+	rockchip,pcie30-phymode = <PHY_MODE_PCIE_NANBNB>; /* P1:PCIe3x2  +  P0:PCIe3x2 */
+	status = "okay";
 };
 
 &pcie3x4 {
-	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+	// Port A: 2 lanes, as Endpoint
+	compatible = "mixtile,miop-ep-rk3588";
+
+	num-lanes = <2>;
 	vpcie3v3-supply = <&vcc3v3_pcie30>;
-	status = "disabled";
+
+	status = "okay";
 };
 
-// for v110
-// &pcie30phy {
-// 	rockchip,pcie30-phymode = <PHY_MODE_PCIE_NANBNB>; /* P1:PCIe3x2  +  P0:PCIe3x2 */
-// 	status = "okay";
-// };
+&pcie3x2 {
+	// Port B: 2 lanes, as Controller
+	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+	vpcie3v3-supply = <&vcc3v3_pcie30>;
 
-// &pcie3x4 {
-// 	// Port 0: 2 lanes, as Endpoint
-// 	num-lanes = <2>;
-// 	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
-// 	vpcie3v3-supply = <&vcc3v3_pcie30>;
-// 	status = "okay";
-// };
-
-// &pcie3x2 {
-// 	// Port 1: 2 lanes, as Controller
-// 	reset-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
-// 	vpcie3v3-supply = <&vcc3v3_pcie30>;
-// 	status = "okay";
-// };
+	status = "okay";
+};
 
 &pinctrl {
 	cam {
