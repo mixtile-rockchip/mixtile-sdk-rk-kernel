@@ -858,7 +858,7 @@
 };
 
 &i2c6 { // USB Type-C 0
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&i2c6m0_xfer>;
 
 	usbc0: fusb302@22 {
@@ -869,7 +869,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&usbc0_int>;
 		vbus-supply = <&vbus5v0_typec0>;
-		status = "disabled";
+		status = "okay";
 
 		ports {
 			#address-cells = <1>;
@@ -887,13 +887,13 @@
 			compatible = "usb-c-connector";
 			label = "USB-C";
 			data-role = "dual";
-			power-role = "source";
-			try-power-role = "source";
+			power-role = "dual";
+			try-power-role = "sink";
 			op-sink-microwatt = <1000000>;
 			sink-pdos =
 				<PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>;
 			source-pdos =
-				<PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>;
+				<PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
 
 			altmodes {
 				#address-cells = <1>;

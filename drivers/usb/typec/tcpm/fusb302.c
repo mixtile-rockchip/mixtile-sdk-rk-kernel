@@ -33,6 +33,8 @@
 
 #include "fusb302_reg.h"
 
+#define DEBUG_TEST
+
 /*
  * When the device is SNK, BC_LVL interrupt is used to monitor cc pins
  * for the current capability offered by the SRC. As FUSB302 chip fires
@@ -719,6 +721,11 @@ static int tcpm_get_cc(struct tcpc_dev *dev, enum typec_cc_status *cc1,
 	*cc2 = chip->cc2;
 	fusb302_log(chip, "cc1=%s, cc2=%s", typec_cc_status_name[*cc1],
 		    typec_cc_status_name[*cc2]);
+#ifdef DEBUG_TEST
+	printk("cc1=%s, cc2=%s\n", typec_cc_status_name[*cc1],
+		    typec_cc_status_name[*cc2]);
+#endif
+
 	mutex_unlock(&chip->lock);
 
 	return 0;
@@ -913,6 +920,10 @@ static int tcpm_set_roles(struct tcpc_dev *dev, bool attached,
 	}
 	fusb302_log(chip, "pd header := %s, %s", typec_role_name[pwr],
 		    typec_data_role_name[data]);
+#ifdef DEBUG_TEST
+	printk("pd header := %s, %s\n", typec_role_name[pwr],
+		    typec_data_role_name[data]);
+#endif
 done:
 	mutex_unlock(&chip->lock);
 
@@ -927,6 +938,10 @@ static int tcpm_start_toggling(struct tcpc_dev *dev,
 						 tcpc_dev);
 	enum toggling_mode mode = TOGGLING_MODE_OFF;
 	int ret = 0;
+
+#ifdef DEBUG_TEST
+	printk("tcpm_start_toggling port_type=%d\n", port_type);
+#endif
 
 	switch (port_type) {
 	case TYPEC_PORT_SRC:
@@ -954,6 +969,11 @@ static int tcpm_start_toggling(struct tcpc_dev *dev,
 		goto done;
 	}
 	fusb302_log(chip, "start drp toggling");
+
+#ifdef DEBUG_TEST
+	printk("start drp toggling\n");
+#endif
+
 done:
 	mutex_unlock(&chip->lock);
 
@@ -1537,10 +1557,16 @@ static void fusb302_irq_work(struct kthread_work *work)
 		    "IRQ: 0x%02x, a: 0x%02x, b: 0x%02x, status0: 0x%02x",
 		    interrupt, interrupta, interruptb, status0);
 
+#ifdef DEBUG_TEST
+	printk("IRQ: 0x%02x, a: 0x%02x, b: 0x%02x, status0: 0x%02x\n", interrupt, interrupta, interruptb, status0);
+#endif
 	if (interrupt & FUSB_REG_INTERRUPT_VBUSOK) {
 		vbus_present = !!(status0 & FUSB_REG_STATUS0_VBUSOK);
 		fusb302_log(chip, "IRQ: VBUS_OK, vbus=%s",
 			    vbus_present ? "On" : "Off");
+#ifdef DEBUG_TEST
+		printk("IRQ: VBUS_OK, vbus=%s\n", vbus_present ? "On" : "Off");
+#endif
 		if (vbus_present != chip->vbus_present) {
 			chip->vbus_present = vbus_present;
 			tcpm_vbus_change(chip->tcpm_port);
@@ -1549,6 +1575,9 @@ static void fusb302_irq_work(struct kthread_work *work)
 
 	if ((interrupta & FUSB_REG_INTERRUPTA_TOGDONE) && intr_togdone) {
 		fusb302_log(chip, "IRQ: TOGDONE");
+#ifdef DEBUG_TEST
+		printk("IRQ: TOGDONE\n");
+#endif
 		ret = fusb302_handle_togdone(chip);
 		if (ret < 0) {
 			fusb302_log(chip,
@@ -1559,6 +1588,9 @@ static void fusb302_irq_work(struct kthread_work *work)
 
 	if ((interrupt & FUSB_REG_INTERRUPT_BC_LVL) && intr_bc_lvl) {
 		fusb302_log(chip, "IRQ: BC_LVL, handler pending");
+#ifdef DEBUG_TEST
+		printk("IRQ: BC_LVL, handler pending\n");
+#endif
 		/*
 		 * as BC_LVL interrupt can be affected by PD activity,
 		 * apply delay to for the handler to wait for the PD
@@ -1572,6 +1604,10 @@ static void fusb302_irq_work(struct kthread_work *work)
 		comp_result = !!(status0 & FUSB_REG_STATUS0_COMP);
 		fusb302_log(chip, "IRQ: COMP_CHNG, comp=%s",
 			    comp_result ? "true" : "false");
+#ifdef DEBUG_TEST
+		printk("IRQ: COMP_CHNG, comp=%s\n",
+			    comp_result ? "true" : "false");
+#endif
 		if (comp_result) {
 			/* cc level > Rd_threshold, detach */
 			chip->cc1 = TYPEC_CC_OPEN;
@@ -1582,16 +1618,25 @@ static void fusb302_irq_work(struct kthread_work *work)
 
 	if (interrupt & FUSB_REG_INTERRUPT_COLLISION) {
 		fusb302_log(chip, "IRQ: PD collision");
+#ifdef DEBUG_TEST
+		printk("IRQ: PD collision\n");
+#endif
 		tcpm_pd_transmit_complete(chip->tcpm_port, TCPC_TX_FAILED);
 	}
 
 	if (interrupta & FUSB_REG_INTERRUPTA_RETRYFAIL) {
 		fusb302_log(chip, "IRQ: PD retry failed");
+#ifdef DEBUG_TEST
+		printk("IRQ: PD retry failed\n");
+#endif
 		tcpm_pd_transmit_complete(chip->tcpm_port, TCPC_TX_FAILED);
 	}
 
 	if (interrupta & FUSB_REG_INTERRUPTA_HARDSENT) {
 		fusb302_log(chip, "IRQ: PD hardreset sent");
+#ifdef DEBUG_TEST
+		printk("IRQ: PD hardreset sent\n");
+#endif
 		ret = fusb302_pd_reset(chip);
 		if (ret < 0) {
 			fusb302_log(chip, "cannot PD reset, ret=%d", ret);
@@ -1602,11 +1647,22 @@ static void fusb302_irq_work(struct kthread_work *work)
 
 	if (interrupta & FUSB_REG_INTERRUPTA_TX_SUCCESS) {
 		fusb302_log(chip, "IRQ: PD tx success");
-		tcpm_pd_transmit_complete(chip->tcpm_port, TCPC_TX_SUCCESS);
+#ifdef DEBUG_TEST
+		printk("IRQ: PD tx success\n");
+#endif
+		ret = fusb302_pd_read_message(chip, &pd_msg);
+		if (ret < 0) {
+			fusb302_log(chip,
+				    "cannot read in PD message, ret=%d", ret);
+			goto done;
+		}
 	}
 
 	if (interrupta & FUSB_REG_INTERRUPTA_HARDRESET) {
 		fusb302_log(chip, "IRQ: PD received hardreset");
+#ifdef DEBUG_TEST
+		printk("IRQ: PD received hardreset\n");
+#endif
 		ret = fusb302_pd_reset(chip);
 		if (ret < 0) {
 			fusb302_log(chip, "cannot PD reset, ret=%d", ret);
@@ -1617,13 +1673,15 @@ static void fusb302_irq_work(struct kthread_work *work)
 
 	if (interruptb & FUSB_REG_INTERRUPTB_GCRCSENT) {
 		fusb302_log(chip, "IRQ: PD sent good CRC");
-
+#ifdef DEBUG_TEST
+		printk("IRQ: PD sent good CRC\n");
+#endif
 		while (!fusb302_rx_fifo_is_empty(chip)) {
 			memset(&pd_msg, 0, sizeof(struct pd_message));
 			ret = fusb302_pd_read_message(chip, &pd_msg);
 			if (ret < 0) {
 				fusb302_log(chip,
-					    "cannot read in PD message, ret=%d", ret);
+						"cannot read in PD message, ret=%d", ret);
 				goto done;
 			}
 		}
