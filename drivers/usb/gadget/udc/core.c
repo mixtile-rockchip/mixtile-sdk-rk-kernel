@@ -1534,19 +1534,27 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
 		return -EINVAL;
 
 	mutex_lock(&udc_lock);
+	
 	if (driver->udc_name) {
 		list_for_each_entry(udc, &udc_list, list) {
+			printk("usb_gadget_probe_driver udc_name=%s, dev_name=%s\n", driver->udc_name, dev_name(&udc->dev));
 			ret = strcmp(driver->udc_name, dev_name(&udc->dev));
 			if (!ret)
 				break;
 		}
-		if (ret)
+
+		if (ret) {
+			printk("usb_gadget_probe_driver ENODEV\n");
 			ret = -ENODEV;
-		else if (udc->driver)
+		}
+		else if (udc->driver) {
+			printk("usb_gadget_probe_driver EBUSY\n");
 			ret = -EBUSY;
+		}
 		else
 			goto found;
 	} else {
+		printk("usb_gadget_probe_driver udc_name NULL\n");
 		list_for_each_entry(udc, &udc_list, list) {
 			/* For now we take the first one */
 			if (!udc->driver)
@@ -1554,6 +1562,7 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
 		}
 	}
 
+	printk("usb_gadget_probe_driver match_existing_only=%d\n", driver->match_existing_only);
 	if (!driver->match_existing_only) {
 		list_add_tail(&driver->pending, &gadget_driver_pending_list);
 		pr_info("udc-core: couldn't find an available UDC - added [%s] to list of pending drivers\n",
