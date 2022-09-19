@@ -7107,3 +7107,8 @@ CONFIG_LKDTM=y
 # CONFIG_MEMTEST is not set
 # end of Kernel Testing and Coverage
 # end of Kernel hacking
+CONFIG_VIDEO_ROCKCHIP_HDMIRX=y
+CONFIG_IWLWIFI=m
+CONFIG_IWLDVM=m
+CONFIG_IWLMVM=m
+CONFIG_SENSORS_PWM_FAN=y

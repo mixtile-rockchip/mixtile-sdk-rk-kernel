@@ -38,14 +38,6 @@
 		};
 	};
 
-	fan0: gpio-fan {
-		#cooling-cells = <2>;
-		compatible = "gpio-fan";
-		gpio-fan,speed-map = <0 0 3000 1>;
-		gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
-
 	hdmiin_dc: hdmiin-dc {
 		compatible = "rockchip,dummy-codec";
 		#sound-dai-cells = <0>;
@@ -247,6 +239,17 @@
 		regulator-max-microvolt = <1100000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
+
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		interrupt-parent = <&gpio1>;
+		interrupts = <RK_PD7 IRQ_TYPE_EDGE_FALLING>;
+		cooling-levels = <0 150 200 255>;
+		#cooling-cells = <2>;
+		fan-supply = <&vcc12v_dcin>;
+		pulses-per-revolution = <2>;
+		pwms = <&pwm14 0 40000 0>;
+	};
 };
 
 /*&pwrkey {
@@ -443,26 +446,13 @@
 	disable-wp;
 	sd-uhs-sdr104;
 	vmmc-supply = <&vcc_3v3_sd_s0>;
+	vqmmc-supply = <&vccio_sd_s0>;
 	status = "okay";
 };
 
 &tsadc {
 	status = "okay";
 };
-
-&spi2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi2m2_cs0 &spi2m2_pins>;
-	num-cs = <1>;
-};
-
-// &spi4 { // 30PIN GPIO
-// 	status = "okay";
-
-// 	pinctrl-names = "default";
-// 	pinctrl-0 = <&spi4m2_cs0 &spi4m2_pins>;
-// 	num-cs = <1>;
-// };
 
 &u2phy0 {
 	status = "okay";
@@ -590,9 +580,9 @@
 };
 
 &usbdrd_dwc3_0 {
+	dr_mode = "otg";
 	status = "okay";
 
-	dr_mode = "otg";
 	usb-role-switch;
 	port {
 		#address-cells = <1>;
@@ -841,20 +831,9 @@
 	};
 };
 
-&i2c3 {
-	// TODO: to MIPI CSI0
-	status = "disabled";
-	pinctrl-0 = <&i2c3m3_xfer>;
-};
-
 &i2c4 { // U.2 port
 	status = "okay";
 	pinctrl-0 = <&i2c4m0_xfer>;
-};
-
-&i2c5 { // 30PIN GPIO
-	status = "okay";
-	pinctrl-0 = <&i2c5m3_xfer>;
 };
 
 &i2c6 { // USB Type-C 0
@@ -928,18 +907,38 @@
 	};
 };
 
-// &i2c7 { // TODO: RTL8125B eth0
-// 	status = "okay";
-// 	pinctrl-0 = <&i2c7m3_xfer>;
-// };
+&i2c5 { // 30PIN GPIO
+	status = "okay";
+	pinctrl-0 = <&i2c5m3_xfer>;
+};
 
-// &i2c8 { // TODO: RTL8125B eth1
-// 	status = "okay";
-// 	pinctrl-0 = <&i2c7m4_xfer>;
-// };
+&pwm14 { // 30PIN GPIO
+	status = "okay";
+	pinctrl-0 = <&pwm14m2_pins>;
+};
+
+&pwm15 { // 30PIN GPIO
+	status = "disabled";
+	pinctrl-0 = <&pwm15m3_pins>;
+};
+
+&spi4 { // 30PIN GPIO
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi4m2_cs0 &spi4m2_pins>;
+	num-cs = <1>;
+};
 
 &i2s2_2ch { // 30PIN GPIO
 	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2s2m1_mclk
+				 &i2s2m1_lrck
+			     &i2s2m1_sclk
+			     &i2s2m1_sdi
+			     &i2s2m1_sdo>;
 };
 
 &can2 { // 30PIN GPIO
@@ -1019,20 +1018,152 @@
 	};
 };
 
-&pwm14 { // 30PIN GPIO
-	status = "okay";
-	pinctrl-0 = <&pwm14m2_pins>;
-};
-
-&pwm15 { // 30PIN GPIO
-	status = "okay";
-	pinctrl-0 = <&pwm15m3_pins>;
-};
-
 &route_hdmi0 {
 	status = "okay";
 };
 
 &sata0 {
 	status = "okay";
+};
+
+&i2c3 {
+        status = "okay";
+		pinctrl-0 = <&i2c3m3_xfer>;
+
+        ov5695: ov5695@36{
+               compatible = "ovti,ov5695";
+               reg = <0x36>;
+               clocks = <&cru CLK_MIPI_CAMARAOUT_M2>;
+               clock-names = "xvclk";
+               pinctrl-names = "default";
+               pinctrl-0 = <&mipim1_camera2_clk>;
+               power-domains = <&power RK3588_PD_VI>;
+               reset-gpios = <&gpio4 RK_PC3 GPIO_ACTIVE_HIGH>;
+               pwdn-gpios = <&gpio4 RK_PC4 GPIO_ACTIVE_HIGH>;
+               rockchip,camera-module-index = <0>;
+               rockchip,camera-module-facing = "back";
+               rockchip,camera-module-name = "TongJu";
+               rockchip,camera-module-lens-name = "CHT842-MD";
+               port {
+                        ov5695_out0: endpoint {
+                               remote-endpoint = <&mipidphy0_in_ucam0>;
+							   data-lanes = <1 2>;
+                       };
+               };
+       };
+};
+
+&csi2_dphy0 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipidphy0_in_ucam0: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&ov5695_out0>;
+				data-lanes = <1 2>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			csidphy0_out: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&mipi2_csi2_input>;
+			};
+		};
+	};
+};
+
+&csi2_dphy0_hw {
+	status = "okay";
+};
+
+&mipi2_csi2 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipi2_csi2_input: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&csidphy0_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipi2_csi2_output: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&cif_mipi2_in0>;
+			};
+		};
+	};
+};
+
+&rkcif {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds2 {
+	status = "okay";
+
+	port {
+		cif_mipi2_in0: endpoint {
+			remote-endpoint = <&mipi2_csi2_output>;
+		};
+	};
+};
+
+&rkcif_mipi_lvds2_sditf {
+	status = "okay";
+
+	port {
+		mipi_lvds2_sditf: endpoint {
+			remote-endpoint = <&isp0_vir0>;
+		};
+	};
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkisp0 {
+	status = "okay";
+};
+
+&isp0_mmu {
+	status = "okay";
+};
+
+&rkisp0_vir0 {
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isp0_vir0: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&mipi_lvds2_sditf>;
+		};
+	};
 };
