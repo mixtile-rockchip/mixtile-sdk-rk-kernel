@@ -29,9 +29,17 @@
 #include <linux/prefetch.h>
 #include <linux/ipv6.h>
 #include <net/ip6_checksum.h>
+#include <linux/soc/rockchip/rk_vendor_storage.h>
 
 #include "r8169.h"
 #include "r8169_firmware.h"
+
+#define VENDOR_STORAGE_MAC_VALID
+
+#ifdef VENDOR_STORAGE_MAC_VALID
+#define MAX_ETH		2
+static  int ethControllerID; 
+#endif
 
 #define MODULENAME "r8169"
 
@@ -5094,6 +5102,46 @@ static int rtl_alloc_irq(struct rtl8169_private *tp)
 	return pci_alloc_irq_vectors(tp->pci_dev, 1, 1, flags);
 }
 
+#ifdef VENDOR_STORAGE_MAC_VALID
+static void rk_get_eth_addr(struct rtl8169_private *tp, unsigned char *addr)
+{
+	unsigned char ethaddr[ETH_ALEN * MAX_ETH] = {0};
+	int ret, id = ethControllerID++;
+
+	if (is_valid_ether_addr(addr))
+		goto out;
+
+	if (id < 0 || id >= MAX_ETH) {
+		dev_err(tp_to_dev(tp), "%s: Invalid ethernet bus id %d\n", __func__, id);
+		return ;
+	}
+
+	ret = rk_vendor_read(LAN_MAC_ID, ethaddr, ETH_ALEN * MAX_ETH);
+	if (ret <= 0 ||
+	    !is_valid_ether_addr(&ethaddr[id * ETH_ALEN])) {
+		dev_err(tp_to_dev(tp), "%s: rk_vendor_read eth mac address failed (%d)\n",
+			__func__, ret);
+		random_ether_addr(&ethaddr[id * ETH_ALEN]);
+		memcpy(addr, &ethaddr[id * ETH_ALEN], ETH_ALEN);
+		dev_err(tp_to_dev(tp), "%s: generate random eth mac address: %pM\n", __func__, addr);
+
+		ret = rk_vendor_write(LAN_MAC_ID, ethaddr, ETH_ALEN * MAX_ETH);
+		if (ret != 0)
+			dev_err(tp_to_dev(tp), "%s: rk_vendor_write eth mac address failed (%d)\n",
+				__func__, ret);
+
+		ret = rk_vendor_read(LAN_MAC_ID, ethaddr, ETH_ALEN * MAX_ETH);
+		if (ret != ETH_ALEN * MAX_ETH)
+			dev_err(tp_to_dev(tp), "%s: id: %d rk_vendor_read eth mac address failed (%d)\n",
+				__func__, id, ret);
+	} else {
+		memcpy(addr, &ethaddr[id * ETH_ALEN], ETH_ALEN);
+	}
+
+out:
+	dev_err(tp_to_dev(tp), "%s: mac address: %pM\n", __func__, addr);
+}
+#else
 static void rtl_read_mac_address(struct rtl8169_private *tp,
 				 u8 mac_addr[ETH_ALEN])
 {
@@ -5113,6 +5161,7 @@ static void rtl_read_mac_address(struct rtl8169_private *tp,
 		rtl_read_mac_from_reg(tp, mac_addr, MAC0_BKP);
 	}
 }
+#endif
 
 DECLARE_RTL_COND(rtl_link_list_ready_cond)
 {
@@ -5302,7 +5351,12 @@ static void rtl_init_mac_address(struct rtl8169_private *tp)
 	if (!rc)
 		goto done;
 
+#ifdef VENDOR_STORAGE_MAC_VALID
+	rk_get_eth_addr(tp, mac_addr);
+#else
 	rtl_read_mac_address(tp, mac_addr);
+#endif
+
 	if (is_valid_ether_addr(mac_addr))
 		goto done;
 
@@ -5323,6 +5377,11 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	enum mac_version chipset;
 	struct net_device *dev;
 	u16 xid;
+
+#ifdef VENDOR_STORAGE_MAC_VALID
+	if (!is_rk_vendor_ready())
+		return -EPROBE_DEFER;
+#endif
 
 	dev = devm_alloc_etherdev(&pdev->dev, sizeof (*tp));
 	if (!dev)
