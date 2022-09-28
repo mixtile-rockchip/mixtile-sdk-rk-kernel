@@ -827,7 +827,7 @@
 };
 
 &i2c4 { // U.2 port
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c4m0_xfer>;
 };
 
@@ -903,12 +903,12 @@
 };
 
 &i2c5 { // 30PIN GPIO
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c5m3_xfer>;
 };
 
 &pwm14 { // 30PIN GPIO
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&pwm14m2_pins>;
 };
 
@@ -918,7 +918,7 @@
 };
 
 &spi4 { // 30PIN GPIO
-	status = "okay";
+	status = "disabled";
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&spi4m2_cs0 &spi4m2_pins>;
@@ -926,7 +926,7 @@
 };
 
 &i2s2_2ch { // 30PIN GPIO
-	status = "okay";
+	status = "disabled";
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2s2m1_mclk
@@ -937,7 +937,7 @@
 };
 
 &can2 { // 30PIN GPIO
-	status = "okay";
+	status = "disabled";
 };
 
 &pcie2x1l0 { // combphy1, to ASM1182e
