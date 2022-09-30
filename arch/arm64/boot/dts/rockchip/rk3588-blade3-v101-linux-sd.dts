@@ -40,6 +40,10 @@
 			reg = <0x0 (256 * 0x100000) 0x0 (256 * 0x100000)>;
 			linux,cma-default;
 		};
+
+		dma_trans: dma_trans@3c000000 {
+			reg = <0x0 0x3c000000 0x0 0x04000000>;
+		};
 	};
 
 	hdmiin_dc: hdmiin-dc {
@@ -957,8 +961,9 @@
 
 &pcie3x4 {
 	// Port A: 2 lanes, as Endpoint
-	compatible = "mixtile,miop-ep-rk3588";
+	compatible = "rockchip,rk3588-pcie-std-ep";
 
+	memory-region = <&dma_trans>;
 	num-lanes = <2>;
 	vpcie3v3-supply = <&vcc3v3_pcie30>;
 
@@ -969,6 +974,7 @@
 	// Port B: 2 lanes, as Controller
 	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie30>;
+	memory-region = <&dma_trans>;
 
 	status = "okay";
 };
