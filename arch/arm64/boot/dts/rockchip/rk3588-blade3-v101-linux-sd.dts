@@ -232,14 +232,19 @@
 	};
 
 	fan: pwm-fan {
-		compatible = "pwm-fan";
-		interrupt-parent = <&gpio1>;
-		interrupts = <RK_PD7 IRQ_TYPE_EDGE_FALLING>;
-		cooling-levels = <0 150 200 255>;
-		#cooling-cells = <2>;
-		fan-supply = <&vcc12v_dcin>;
-		pulses-per-revolution = <2>;
-		pwms = <&pwm14 0 40000 0>;
+			compatible = "pwm-fan";
+			interrupt-parent = <&gpio3>;
+			interrupts = <RK_PB1 IRQ_TYPE_EDGE_FALLING>;
+			pulses-per-revolution = <2>;
+			#cooling-cells = <2>;
+			pwms = <&pwm8 0 250000 0>;
+			cooling-levels = <0 100 150 200 255>;
+			rockchip,temp-trips = <
+				50000	1
+				55000	2
+				60000	3
+				65000	4
+			>;
 	};
 };
 
@@ -657,7 +662,7 @@
 	status = "okay";
 };
 
-&dp0_in_vp2 {
+&dp0_in_vp1 {
 	status = "okay";
 };
 
@@ -902,6 +907,12 @@
 &i2c5 { // 30PIN GPIO
 	status = "disabled";
 	pinctrl-0 = <&i2c5m3_xfer>;
+};
+
+&pwm8 {
+    pinctrl-names = "active";
+	status = "okay";
+	pinctrl-0 = <&pwm8m2_pins>;
 };
 
 &pwm14 { // 30PIN GPIO
