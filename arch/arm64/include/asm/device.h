@@ -6,6 +6,8 @@
 #define __ASM_DEVICE_H
 
 struct dev_archdata {
+    /* input report flags */
+	u32 flags;
 };
 
 struct pdev_archdata {

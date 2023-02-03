@@ -20,8 +20,10 @@ static irqreturn_t pwrkey_fall_irq(int irq, void *_pwr)
 {
 	struct input_dev *pwr = _pwr;
 
-	input_report_key(pwr, KEY_POWER, 1);
-	input_sync(pwr);
+	if (pwr->dev.parent->archdata.flags) {
+		input_report_key(pwr, KEY_POWER, 1);
+		input_sync(pwr);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -30,8 +32,10 @@ static irqreturn_t pwrkey_rise_irq(int irq, void *_pwr)
 {
 	struct input_dev *pwr = _pwr;
 
-	input_report_key(pwr, KEY_POWER, 0);
-	input_sync(pwr);
+	if (pwr->dev.parent->archdata.flags) {
+		input_report_key(pwr, KEY_POWER, 0);
+		input_sync(pwr);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -43,6 +47,7 @@ static int rk805_pwrkey_probe(struct platform_device *pdev)
 	struct device_node *np;
 	int err;
 
+	pdev->dev.archdata.flags = 1;
 	np = of_get_child_by_name(pdev->dev.parent->of_node, "pwrkey");
 	if (np && !of_device_is_available(np)) {
 		dev_info(&pdev->dev, "device is disabled\n");
@@ -94,7 +99,18 @@ static int rk805_pwrkey_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, pwr);
 	device_init_wakeup(&pdev->dev, true);
+	return 0;
+}
 
+int rk805_pwrkey_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	pdev->dev.archdata.flags = 0;
+	return 0;
+}
+
+int rk805_pwrkey_resume(struct platform_device *pdev)
+{
+	pdev->dev.archdata.flags = 1;
 	return 0;
 }
 
@@ -103,6 +119,8 @@ static struct platform_driver rk805_pwrkey_driver = {
 	.driver	= {
 		.name = "rk805-pwrkey",
 	},
+	.suspend = rk805_pwrkey_suspend,
+	.resume = rk805_pwrkey_resume,
 };
 module_platform_driver(rk805_pwrkey_driver);
 
