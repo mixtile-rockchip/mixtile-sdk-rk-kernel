@@ -952,26 +952,14 @@
 };
 
 &pcie30phy {
-	rockchip,pcie30-phymode = <PHY_MODE_PCIE_NANBNB>; /* P1:PCIe3x2  +  P0:PCIe3x2 */
-	status = "okay";
+rockchip,pcie30-phymode = <PHY_MODE_PCIE_AGGREGATION>; /* P1:PCIe3x2  +  P0:PCIe3x2 */
+status = "okay";
 };
 
 &pcie3x4 {
-	// Port A: 2 lanes, as Endpoint
-	compatible = "mixtile,miop-ep-rk3588";
-
-	num-lanes = <2>;
-	vpcie3v3-supply = <&vcc3v3_pcie30>;
-
-	status = "okay";
-};
-
-&pcie3x2 {
-	// Port B: 2 lanes, as Controller
-	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&vcc3v3_pcie30>;
-
-	status = "okay";
+    reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+    vpcie3v3-supply = <&vcc3v3_pcie30>;
+    status = "okay";
 };
 
 &pinctrl {
