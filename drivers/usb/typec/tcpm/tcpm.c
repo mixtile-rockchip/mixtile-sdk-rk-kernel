@@ -297,7 +297,6 @@ struct pd_pps_data {
 
 struct tcpm_port {
 	struct device *dev;
-
 	struct mutex lock;		/* tcpm state machine lock */
 	struct kthread_worker *wq;
 
@@ -2344,8 +2343,9 @@ static int tcpm_set_auto_vbus_discharge_threshold(struct tcpm_port *port,
 {
 	int ret;
 
-	if (!port->tcpc->set_auto_vbus_discharge_threshold)
+	if (!port->tcpc->set_auto_vbus_discharge_threshold) {
 		return 0;
+	}
 
 	ret = port->tcpc->set_auto_vbus_discharge_threshold(port->tcpc, mode, pps_active,
 							    requested_vbus_voltage);

@@ -619,10 +619,10 @@ static int tcpm_set_cc(struct tcpc_dev *dev, enum typec_cc_status cc)
 	switch (cc) {
 	case TYPEC_CC_OPEN:
 		break;
-	case TYPEC_CC_RD:
-		switches0_data |= FUSB_REG_SWITCHES0_CC1_PD_EN |
-				  FUSB_REG_SWITCHES0_CC2_PD_EN;
-		break;
+	// case TYPEC_CC_RD:
+	// 	switches0_data |= FUSB_REG_SWITCHES0_CC1_PD_EN |
+	// 			  FUSB_REG_SWITCHES0_CC2_PD_EN;
+	// 	break;
 	case TYPEC_CC_RP_DEF:
 	case TYPEC_CC_RP_1_5:
 	case TYPEC_CC_RP_3_0:
@@ -1031,8 +1031,9 @@ static int fusb302_pd_send_message(struct fusb302_chip *chip,
 
 static int fusb302_pd_send_hardreset(struct fusb302_chip *chip)
 {
-	return fusb302_i2c_set_bits(chip, FUSB_REG_CONTROL3,
-				    FUSB_REG_CONTROL3_SEND_HARDRESET);
+	// return fusb302_i2c_set_bits(chip, FUSB_REG_CONTROL3,
+	// 			    FUSB_REG_CONTROL3_SEND_HARDRESET);
+	return 0;
 }
 
 static const char * const transmit_type_name[] = {
@@ -1707,6 +1708,7 @@ static int init_gpio(struct fusb302_chip *chip)
 			"cannot request IRQ for GPIO Int_N, ret=%d", ret);
 		return ret;
 	}
+
 	chip->gpio_int_n_irq = ret;
 	return 0;
 }
@@ -1797,14 +1799,14 @@ static int fusb302_probe(struct i2c_client *client,
 	init_tcpc_dev(&chip->tcpc_dev);
 	fusb302_debugfs_init(chip);
 
-	if (client->irq) {
-		chip->gpio_int_n_irq = client->irq;
-	} else {
-		ret = init_gpio(chip);
-		if (ret < 0)
-			goto destroy_workqueue;
-	}
-
+	// if (client->irq) {
+	// 	chip->gpio_int_n_irq = client->irq;
+	// } else {
+	ret = init_gpio(chip);
+	if (ret < 0)
+		goto destroy_workqueue;
+	// }
+	
 	chip->tcpc_dev.fwnode = fusb302_fwnode_get(dev);
 	if (IS_ERR(chip->tcpc_dev.fwnode)) {
 		ret = PTR_ERR(chip->tcpc_dev.fwnode);
@@ -1829,7 +1831,6 @@ static int fusb302_probe(struct i2c_client *client,
 	}
 	enable_irq_wake(chip->gpio_int_n_irq);
 	i2c_set_clientdata(client, chip);
-
 	return ret;
 
 tcpm_unregister_port:
