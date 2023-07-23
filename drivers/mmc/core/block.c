@@ -2955,7 +2955,7 @@ static int mmc_blk_probe(struct mmc_card *card)
 	dev_set_drvdata(&card->dev, md);
 
 #if defined(CONFIG_MMC_DW_ROCKCHIP) || defined(CONFIG_MMC_SDHCI_OF_ARASAN)
-	if (card->type == MMC_TYPE_MMC)
+	if (card->type == MMC_TYPE_MMC || card->type == MMC_TYPE_SD)
 		this_card = card;
 #endif
 

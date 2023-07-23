@@ -5379,8 +5379,18 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	u16 xid;
 
 #ifdef VENDOR_STORAGE_MAC_VALID
-	if (!is_rk_vendor_ready())
-		return -EPROBE_DEFER;
+	unsigned long timeout = jiffies + 3 * HZ;
+	bool ret;
+
+	do {
+		ret = is_rk_vendor_ready();
+		if (ret)
+			break;
+		if (time_after(jiffies, timeout))
+			return -EPROBE_DEFER;
+		/* sleep wait vendor initialize completed */
+		msleep(100);
+	} while (1);
 #endif
 
 	dev = devm_alloc_etherdev(&pdev->dev, sizeof (*tp));
