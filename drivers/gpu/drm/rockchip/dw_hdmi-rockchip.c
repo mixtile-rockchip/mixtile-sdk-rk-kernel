@@ -3218,7 +3218,7 @@ dw_hdmi_rk3588_read_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
 	regmap_read(hdmi->regmap, RK3588_GRF_SOC_STATUS1, &val);
 
 	if (!hdmi->id) {
-		if (val & RK3588_HDMI0_LEVEL_INT) {
+		if (!(val & RK3588_HDMI0_LEVEL_INT)) {
 			hdmi->hpd_stat = true;
 			ret = connector_status_connected;
 		} else {
@@ -3226,7 +3226,7 @@ dw_hdmi_rk3588_read_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
 			ret = connector_status_disconnected;
 		}
 	} else {
-		if (val & RK3588_HDMI1_LEVEL_INT) {
+		if (!(val & RK3588_HDMI1_LEVEL_INT)) {
 			hdmi->hpd_stat = true;
 			ret = connector_status_connected;
 		} else {
