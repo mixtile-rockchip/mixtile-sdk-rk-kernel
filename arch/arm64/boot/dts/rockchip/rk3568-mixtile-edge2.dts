@@ -8,8 +8,6 @@
 #include <dt-bindings/sensor-dev.h>
 #include "rk3568.dtsi"
 #include "rk3568-linux.dtsi"
-#include "rk3568-mixtile-edge2-display.dtsi"
-#include "rk3568-mixtile-edge2-camera.dtsi"
 
 / {
 
