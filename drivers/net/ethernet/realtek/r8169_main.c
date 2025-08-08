@@ -34,6 +34,15 @@
 #include "r8169.h"
 #include "r8169_firmware.h"
 
+#include <linux/soc/rockchip/rk_vendor_storage.h>
+
+#define VENDOR_STORAGE_MAC_VALID
+
+#ifdef VENDOR_STORAGE_MAC_VALID
+#define MAX_ETH		2
+static  int ethControllerID;
+#endif
+
 #define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
 #define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-2.fw"
 #define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
@@ -4204,6 +4213,7 @@ static void rtl8169_tso_csum_v1(struct sk_buff *skb, u32 *opts)
 static bool rtl8169_tso_csum_v2(struct rtl8169_private *tp,
 				struct sk_buff *skb, u32 *opts)
 {
+	u32 transport_offset = (u32)skb_transport_offset(skb);
 	struct skb_shared_info *shinfo = skb_shinfo(skb);
 	u32 mss = shinfo->gso_size;
 
@@ -4220,7 +4230,7 @@ static bool rtl8169_tso_csum_v2(struct rtl8169_private *tp,
 			WARN_ON_ONCE(1);
 		}
 
-		opts[0] |= skb_transport_offset(skb) << GTTCPHO_SHIFT;
+		opts[0] |= transport_offset << GTTCPHO_SHIFT;
 		opts[1] |= mss << TD1_MSS_SHIFT;
 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
 		u8 ip_protocol;
@@ -4248,7 +4258,7 @@ static bool rtl8169_tso_csum_v2(struct rtl8169_private *tp,
 		else
 			WARN_ON_ONCE(1);
 
-		opts[1] |= skb_transport_offset(skb) << TCPHO_SHIFT;
+		opts[1] |= transport_offset << TCPHO_SHIFT;
 	} else {
 		unsigned int padto = rtl_quirk_packet_padto(tp, skb);
 
@@ -4412,13 +4422,14 @@ static netdev_features_t rtl8169_features_check(struct sk_buff *skb,
 						struct net_device *dev,
 						netdev_features_t features)
 {
+	int transport_offset = skb_transport_offset(skb);
 	struct rtl8169_private *tp = netdev_priv(dev);
 
 	if (skb_is_gso(skb)) {
 		if (tp->mac_version == RTL_GIGA_MAC_VER_34)
 			features = rtl8168evl_fix_tso(skb, features);
 
-		if (skb_transport_offset(skb) > GTTCPHO_MAX &&
+		if (transport_offset > GTTCPHO_MAX &&
 		    rtl_chip_supports_csum_v2(tp))
 			features &= ~NETIF_F_ALL_TSO;
 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
@@ -4429,7 +4440,7 @@ static netdev_features_t rtl8169_features_check(struct sk_buff *skb,
 		if (rtl_quirk_packet_padto(tp, skb))
 			features &= ~NETIF_F_CSUM_MASK;
 
-		if (skb_transport_offset(skb) > TCPHO_MAX &&
+		if (transport_offset > TCPHO_MAX &&
 		    rtl_chip_supports_csum_v2(tp))
 			features &= ~NETIF_F_CSUM_MASK;
 	}
@@ -5079,6 +5090,47 @@ static int rtl_alloc_irq(struct rtl8169_private *tp)
 	return pci_alloc_irq_vectors(tp->pci_dev, 1, 1, flags);
 }
 
+#ifdef VENDOR_STORAGE_MAC_VALID
+static void rk_get_eth_addr(struct rtl8169_private *tp, unsigned char *addr)
+{
+	unsigned char ethaddr[ETH_ALEN * MAX_ETH] = {0};
+	int ret, id = ethControllerID++;
+
+	if (is_valid_ether_addr(addr))
+		goto out;
+
+	if (id < 0 || id >= MAX_ETH) {
+		dev_err(tp_to_dev(tp), "%s: Invalid ethernet bus id %d\n", __func__, id);
+		return ;
+	}
+
+	ret = rk_vendor_read(LAN_MAC_ID, ethaddr, ETH_ALEN * MAX_ETH);
+	if (ret <= 0 ||
+	    !is_valid_ether_addr(&ethaddr[id * ETH_ALEN])) {
+		dev_err(tp_to_dev(tp), "%s: rk_vendor_read eth mac address failed (%d)\n",
+			__func__, ret);
+		eth_random_addr(&ethaddr[id * ETH_ALEN]);
+		memcpy(addr, &ethaddr[id * ETH_ALEN], ETH_ALEN);
+		dev_err(tp_to_dev(tp), "%s: generate random eth mac address: %pM\n", __func__, addr);
+
+		ret = rk_vendor_write(LAN_MAC_ID, ethaddr, ETH_ALEN * MAX_ETH);
+		if (ret != 0)
+			dev_err(tp_to_dev(tp), "%s: rk_vendor_write eth mac address failed (%d)\n",
+				__func__, ret);
+
+		ret = rk_vendor_read(LAN_MAC_ID, ethaddr, ETH_ALEN * MAX_ETH);
+		if (ret != ETH_ALEN * MAX_ETH)
+			dev_err(tp_to_dev(tp), "%s: id: %d rk_vendor_read eth mac address failed (%d)\n",
+				__func__, id, ret);
+	} else {
+		memcpy(addr, &ethaddr[id * ETH_ALEN], ETH_ALEN);
+	}
+
+out:
+	dev_err(tp_to_dev(tp), "%s: mac address: %pM\n", __func__, addr);
+}
+#else
+
 static void rtl_read_mac_address(struct rtl8169_private *tp,
 				 u8 mac_addr[ETH_ALEN])
 {
@@ -5094,6 +5146,7 @@ static void rtl_read_mac_address(struct rtl8169_private *tp,
 		rtl_read_mac_from_reg(tp, mac_addr, MAC0_BKP);
 	}
 }
+#endif
 
 DECLARE_RTL_COND(rtl_link_list_ready_cond)
 {
@@ -5264,7 +5317,11 @@ static void rtl_init_mac_address(struct rtl8169_private *tp)
 	if (!rc)
 		goto done;
 
+#ifdef VENDOR_STORAGE_MAC_VALID
+	rk_get_eth_addr(tp, mac_addr);
+#else
 	rtl_read_mac_address(tp, mac_addr);
+#endif
 	if (is_valid_ether_addr(mac_addr))
 		goto done;
 
@@ -5297,6 +5354,21 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	enum mac_version chipset;
 	struct net_device *dev;
 	u16 xid;
+
+#ifdef VENDOR_STORAGE_MAC_VALID
+	unsigned long timeout = jiffies + 3 * HZ;
+	bool ret;
+
+	do {
+		ret = is_rk_vendor_ready();
+		if (ret)
+			break;
+		if (time_after(jiffies, timeout))
+			return -EPROBE_DEFER;
+		/* sleep wait vendor initialize completed */
+		msleep(100);
+	} while (1);
+#endif
 
 	dev = devm_alloc_etherdev(&pdev->dev, sizeof (*tp));
 	if (!dev)
