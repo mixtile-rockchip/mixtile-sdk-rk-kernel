@@ -352,6 +352,7 @@ struct rockchip_hdmi {
 	struct rockchip_drm_hdmi21_data hdmi21_data;
 	u32 force_bus_format;
 	u32 sda_falling_delay_ns;
+	u32 hpd_trigger_level;
 };
 
 #define to_rockchip_hdmi(x)	container_of(x, struct rockchip_hdmi, x)
@@ -1821,6 +1822,11 @@ static int rockchip_hdmi_parse_dt(struct rockchip_hdmi *hdmi)
 		kfree(phy_config);
 	} else {
 		dev_dbg(hdmi->dev, "use default hdmi phy table\n");
+	}
+	
+	if (of_property_read_u32(np, "hpd-trigger-level", &hdmi->hpd_trigger_level)) {
+		hdmi->hpd_trigger_level = 1;
+		dev_warn(hdmi->dev, "failed to get hpd-trigger-level, set high as default\n");
 	}
 
 	if (of_property_read_bool(np, "force-output")) {
@@ -4176,6 +4182,10 @@ dw_hdmi_rk3588_read_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
 	struct rockchip_hdmi *hdmi = (struct rockchip_hdmi *)data;
 
 	regmap_read(hdmi->regmap, RK3588_GRF_SOC_STATUS1, &val);
+
+	if (hdmi->hpd_trigger_level == 0) {
+		val = ~val;
+	}
 
 	if (!hdmi->id) {
 		if (val & RK3588_HDMI0_LEVEL_INT) {
