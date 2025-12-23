@@ -3500,6 +3500,17 @@ int uart_get_rs485_mode(struct uart_port *port)
 	if (port->rs485_term_gpio)
 		port->rs485_supported.flags |= SER_RS485_TERMINATE_BUS;
 
+#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
+	port->rs485_de_gpio = devm_gpiod_get_optional(dev, "rs485-de",
+							GPIOD_OUT_LOW);
+	if (IS_ERR(port->rs485_de_gpio))
+		port->rs485_de_gpio = NULL;
+	port->rs485_re_gpio = devm_gpiod_get_optional(dev, "rs485-re",
+							GPIOD_OUT_LOW);
+	if (IS_ERR(port->rs485_re_gpio))
+		port->rs485_re_gpio = NULL;
+
+#endif
 	return 0;
 }
 EXPORT_SYMBOL_GPL(uart_get_rs485_mode);
