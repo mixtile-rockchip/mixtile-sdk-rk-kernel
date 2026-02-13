@@ -858,10 +858,6 @@
     status = "okay";
 };
 
-&chosen {
-    bootargs = "earlycon=uart8250,mmio32,0xfeb50000 console=ttyFIQ0 irqchip.gicv3_pseudo_nmi=0 panic=3 rcupdate.rcu_expedited=1 rcu_nocbs=all";
-};
-
 &gpio0 {
         gpio-line-names =
                 /* GPIO0_A0-A3 */
