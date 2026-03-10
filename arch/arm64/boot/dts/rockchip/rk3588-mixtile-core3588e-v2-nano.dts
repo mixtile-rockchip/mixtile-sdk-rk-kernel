@@ -19,8 +19,6 @@
 #include "rk3588-rk806-single.dtsi"
 #include "rk3588-linux.dtsi"
 
-#include "rk3588-mixtile-core3588e-imx219.dtsi"
-
 / {
 	model = "Mixtile Core 3588E";
 	compatible = "mixtile,core3588e", "rockchip,rk3588";
