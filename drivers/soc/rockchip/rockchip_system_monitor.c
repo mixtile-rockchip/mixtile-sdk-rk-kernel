@@ -76,6 +76,9 @@ struct system_monitor {
 	struct kobject *kobj;
 
 	struct thermal_zone_device *tz;
+	const char **extra_tz_names;
+	struct thermal_zone_device **extra_tzs;
+	int extra_tz_count;
 	struct delayed_work thermal_work;
 	struct temp_freq_table *temp_ddr_ref_mode;
 	int last_temp;
@@ -1506,6 +1509,7 @@ static int rockchip_system_monitor_parse_dt(struct system_monitor *monitor)
 {
 	struct device_node *np = monitor->dev->of_node;
 	const char *tz_name, *buf = NULL;
+	int count, i;
 
 	if (of_property_read_string(np, "rockchip,early-suspend-offline-cpus", &buf))
 		cpumask_clear(&monitor->early_suspend_offline_cpus);
@@ -1517,13 +1521,40 @@ static int rockchip_system_monitor_parse_dt(struct system_monitor *monitor)
 	else
 		cpulist_parse(buf, &monitor->video_4k_offline_cpus);
 
-	if (of_property_read_string(np, "rockchip,thermal-zone", &tz_name))
-		goto out;
-	monitor->tz = thermal_zone_get_zone_by_name(tz_name);
-	if (IS_ERR(monitor->tz)) {
-		monitor->tz = NULL;
-		goto out;
+	count = of_property_count_strings(np, "rockchip,extra-thermal-zones");
+	if (count > 0) {
+		monitor->extra_tz_names = devm_kcalloc(monitor->dev, count,
+						       sizeof(*monitor->extra_tz_names),
+						       GFP_KERNEL);
+		if (!monitor->extra_tz_names)
+			return -ENOMEM;
+		monitor->extra_tzs = devm_kcalloc(monitor->dev, count,
+						  sizeof(*monitor->extra_tzs),
+						  GFP_KERNEL);
+		if (!monitor->extra_tzs)
+			return -ENOMEM;
+		for (i = 0; i < count; i++) {
+			if (of_property_read_string_index(np,
+							  "rockchip,extra-thermal-zones",
+							  i, &tz_name))
+				continue;
+			monitor->extra_tz_names[monitor->extra_tz_count] = tz_name;
+			monitor->extra_tzs[monitor->extra_tz_count] =
+				thermal_zone_get_zone_by_name(tz_name);
+			if (IS_ERR(monitor->extra_tzs[monitor->extra_tz_count]))
+				monitor->extra_tzs[monitor->extra_tz_count] = NULL;
+			monitor->extra_tz_count++;
+		}
 	}
+
+	if (!of_property_read_string(np, "rockchip,thermal-zone", &tz_name)) {
+		monitor->tz = thermal_zone_get_zone_by_name(tz_name);
+		if (IS_ERR(monitor->tz))
+			monitor->tz = NULL;
+	}
+
+	if (!monitor->tz)
+		goto out;
 	if (of_property_read_u32(np, "rockchip,polling-delay",
 				 &monitor->delay))
 		monitor->delay = THERMAL_POLLING_DELAY;
@@ -1658,7 +1689,7 @@ static void rockchip_system_monitor_temp_ddr_ref_mode(int temp)
 
 static void rockchip_system_monitor_thermal_update(void)
 {
-	int temp, ret;
+	int temp, temp_notify, ret, i;
 	struct monitor_dev_info *info;
 
 	ret = thermal_zone_get_temp(system_monitor->tz, &temp);
@@ -1667,12 +1698,32 @@ static void rockchip_system_monitor_thermal_update(void)
 
 	dev_dbg(system_monitor->dev, "temperature=%d\n", temp);
 
-	if (temp < system_monitor->last_temp &&
-	    system_monitor->last_temp - temp <= 2000)
-		goto out;
-	system_monitor->last_temp = temp;
+	temp_notify = temp;
+	for (i = 0; i < system_monitor->extra_tz_count; i++) {
+		int extra_temp;
 
-	rockchip_system_monitor_temp_notify(temp);
+		if (!system_monitor->extra_tzs[i] && system_monitor->extra_tz_names &&
+		    system_monitor->extra_tz_names[i]) {
+			system_monitor->extra_tzs[i] =
+				thermal_zone_get_zone_by_name(system_monitor->extra_tz_names[i]);
+			if (IS_ERR(system_monitor->extra_tzs[i]))
+				system_monitor->extra_tzs[i] = NULL;
+		}
+		if (!system_monitor->extra_tzs[i])
+			continue;
+		ret = thermal_zone_get_temp(system_monitor->extra_tzs[i], &extra_temp);
+		if (ret || extra_temp == THERMAL_TEMP_INVALID)
+			continue;
+		if (extra_temp > temp_notify)
+			temp_notify = extra_temp;
+	}
+
+	if (temp_notify < system_monitor->last_temp &&
+	    system_monitor->last_temp - temp_notify <= 2000)
+		goto out;
+	system_monitor->last_temp = temp_notify;
+
+	rockchip_system_monitor_temp_notify(temp_notify);
 
 	down_read(&mdev_list_sem);
 	list_for_each_entry(info, &monitor_dev_list, node)
