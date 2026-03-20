@@ -473,6 +473,10 @@
 	mem-supply = <&vdd_log_s0>;
 };
 
+&dmcdbg {
+	status = "okay";
+};
+
 &uart9 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart9m2_xfer &uart9m2_ctsn>;
