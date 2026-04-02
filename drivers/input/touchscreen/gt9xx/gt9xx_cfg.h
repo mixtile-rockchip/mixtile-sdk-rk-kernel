@@ -59,7 +59,7 @@ static u8 gtp_dat_10_1[] = {
 static u8 gtp_dat_7[] = {
 	/* TODO:Puts your update firmware data here! */
 	/* <1024, 600> 7.0 */
-	#include "WGJ10187_GT910_Config_20140623_104014_0X41.cfg"
+	#include "GT911_GG_V88_1024x600_20210402.cfg"
 };
 
 #endif /* _GOODIX_GT9XX_CFG_H_ */

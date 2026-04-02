@@ -2109,7 +2109,8 @@ static s8 gtp_request_input_dev(struct i2c_client *client,
     input_set_abs_params(ts->input_dev, ABS_MT_TRACKING_ID, 0, 255, 0, 0);
 
     sprintf(phys, "input/ts");
-    ts->input_dev->name = goodix_ts_name;
+    ts->input_dev->name = devm_kasprintf(&client->dev, GFP_KERNEL, "%s-%d",
+					 goodix_ts_name, ts->index);
     ts->input_dev->phys = phys;
     ts->input_dev->id.bustype = BUS_I2C;
     ts->input_dev->id.vendor = 0xDEAD;
@@ -2691,9 +2692,9 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
 		bgt911 = FALSE;
 		bgt970 = FALSE;
 		bgt910 = TRUE;
-		gtp_change_x2y = TRUE;
+		gtp_change_x2y = FALSE;
 		gtp_x_reverse = FALSE;
-		gtp_y_reverse = TRUE;
+		gtp_y_reverse = FALSE;
 	}
 
 	ts->tp_regulator = devm_regulator_get(&client->dev, "tp");
@@ -2727,6 +2728,10 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
     } else {
 	    ts->cfg_file_num = val;
     }
+    if (of_property_read_u32(np, "index", &val))
+	    ts->index = 0;
+    else
+	    ts->index = val;
     ts->pendown =PEN_RELEASE;
     ts->client = client;
     
