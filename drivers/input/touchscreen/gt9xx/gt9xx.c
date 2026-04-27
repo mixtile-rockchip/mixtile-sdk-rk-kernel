@@ -143,8 +143,6 @@ static DOZE_T doze_status = DOZE_DISABLED;
 static s8 gtp_enter_doze(struct goodix_ts_data *ts);
 #endif
 
-static u8 grp_cfg_version = 0;
-
 /*******************************************************
 Function:
     Read data from the i2c slave device.
@@ -1364,7 +1362,7 @@ static s8 gtp_wakeup_sleep(struct goodix_ts_data * ts)
     return ret;
 }
 #if GTP_DRIVER_SEND_CFG
-static s32 gtp_get_info(struct goodix_ts_data *ts)
+static s32 __maybe_unused gtp_get_info(struct goodix_ts_data *ts)
 {
     u8 opr_buf[6] = {0};
     s32 ret = 0;
@@ -1552,20 +1550,18 @@ static s32 gtp_init_panel(struct goodix_ts_data *ts)
             GTP_DEBUG("CFG_GROUP%d Config Version: %d, 0x%02X; IC Config Version: %d, 0x%02X", sensor_id+1, 
                         send_cfg_buf[sensor_id][0], send_cfg_buf[sensor_id][0], opr_buf[0], opr_buf[0]);
             
-            if (opr_buf[0] < 90)    
+            if (send_cfg_buf[sensor_id][0] != opr_buf[0])
             {
-                GTP_INFO("  <%s>_%d \n", __func__, __LINE__);
-                grp_cfg_version = send_cfg_buf[sensor_id][0];       // backup group config version
-                send_cfg_buf[sensor_id][0] = 0x00;
-                ts->fixed_cfg = 0;
+                GTP_INFO("IC config version 0x%02X, align cfg version from 0x%02X and force send.",
+                         opr_buf[0], send_cfg_buf[sensor_id][0]);
             }
-            else        // treated as fixed config, not send config
+            else
             {
-                GTP_INFO("Ic fixed config with config version(%d, 0x%02X)", opr_buf[0], opr_buf[0]);
-                ts->fixed_cfg = 1;
-                gtp_get_info(ts);
-                return 0;
+                GTP_INFO("IC config version 0x%02X matched, force send cfg.", opr_buf[0]);
             }
+
+            send_cfg_buf[sensor_id][0] = opr_buf[0];
+            ts->fixed_cfg = 0;
         }
         else
         {
@@ -1666,14 +1662,6 @@ static s32 gtp_init_panel(struct goodix_ts_data *ts)
         {
             GTP_ERROR("Send config error.");
         }
-        // set config version to CTP_CFG_GROUP, for resume to send config
-        config[GTP_ADDR_LENGTH] = grp_cfg_version;
-        check_sum = 0;
-        for (i = GTP_ADDR_LENGTH; i < ts->gtp_cfg_len; i++)
-        {
-            check_sum += config[i];
-        }
-        config[ts->gtp_cfg_len] = (~check_sum) + 1;
     #endif
         GTP_INFO("X_MAX: %d, Y_MAX: %d, TRIGGER: 0x%02x", ts->abs_x_max,ts->abs_y_max,ts->int_trigger_type);
     }
