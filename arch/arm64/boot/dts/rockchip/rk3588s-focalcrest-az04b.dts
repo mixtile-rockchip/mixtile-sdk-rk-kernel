@@ -1788,11 +1788,17 @@
 
 	pmic {
 		az04b_pmic_pins: az04b-pmic-pins {
-			rockchip,pins = <0 RK_PA7 RK_FUNC_GPIO &pcfg_pull_up>,
-					<0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>,
-					<0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>,
-					<0 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>,
-					<0 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none>;
+                        rockchip,pins =
+                                /* pmic_int_l */
+                                <0 RK_PA7 0 &pcfg_pull_up>,
+                                /* pmic_sleep1 */
+                                <0 RK_PA2 1 &pcfg_pull_none>,
+                                /* pmic_sleep2 */
+                                <0 RK_PA3 1 &pcfg_pull_none>,
+                                /* pmic_sleep3 */
+                                <0 RK_PC1 1 &pcfg_pull_none>,
+                                /* pmic_sleep5 */
+                                <0 RK_PC3 1 &pcfg_pull_none>;
 		};
 	};
 
