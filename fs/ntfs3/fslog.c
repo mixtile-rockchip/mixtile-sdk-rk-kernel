@@ -4535,9 +4535,22 @@ copy_lcns:
 		 * whole routine a loop, case Lcns do not fit below.
 		 */
 		t16 = le16_to_cpu(lrh->lcns_follow);
+		t32 = le32_to_cpu(dp->lcns_follow);
+		if (le64_to_cpu(lrh->target_vcn) < le64_to_cpu(dp->vcn)) {
+			err = -EINVAL;
+			goto out;
+		}
+
+		/* Bound the whole copy without overflowing the VCN addition. */
+		t64 = le64_to_cpu(lrh->target_vcn) - le64_to_cpu(dp->vcn);
+		if (t64 > t32 || t16 > t32 - t64) {
+			err = -EINVAL;
+			log->set_dirty = true;
+			goto out;
+		}
+
 		for (i = 0; i < t16; i++) {
-			size_t j = (size_t)(le64_to_cpu(lrh->target_vcn) -
-					    le64_to_cpu(dp->vcn));
+			size_t j = (size_t)t64;
 			dp->page_lcns[j + i] = lrh->page_lcns[i];
 		}
 
