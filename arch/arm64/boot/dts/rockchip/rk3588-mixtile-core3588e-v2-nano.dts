@@ -19,6 +19,8 @@
 #include "rk3588-rk806-single.dtsi"
 #include "rk3588-linux.dtsi"
 
+#include "rk3588-mixtile-core3588e-imx219.dtsi"
+
 / {
 	model = "Mixtile Core 3588E";
 	compatible = "mixtile,core3588e", "rockchip,rk3588";
@@ -404,6 +406,10 @@
 	vref-supply = <&vcc_1v8_s0>;
 };
 
+&reboot_mode {
+        mode-maskrom = <0xEF08A53C>;
+};
+
 &sdhci {
 	bus-width = <8>;
 	no-sdio;
@@ -590,6 +596,10 @@
     status = "okay";
 };
 
+&crypto {
+	status = "okay";
+};
+
 &gmac0 {
         /* Use rgmii-rxid mode to disable rx delay inside Soc */
         phy-mode = "rgmii-rxid";
@@ -715,7 +725,7 @@
 };
 
 &i2c3 { 
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c3m0_xfer>;
 };
 
@@ -739,7 +749,7 @@
 };
 
 &i2c5 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m2_xfer>;
 };
@@ -757,7 +767,7 @@
 };
 
 &spi0 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spi0m3_cs1 &spi0m3_pins>;
 	num-cs = <1>;
@@ -770,7 +780,7 @@
 };
 
 &spi1 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spi1m2_cs0 &spi1m2_pins>;
 	num-cs = <1>;
@@ -783,7 +793,7 @@
 };
 
 &i2s0_8ch {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2s0_lrck
 	             &i2s0_sclk
@@ -792,11 +802,11 @@
 };
 
 &i2s5_8ch {
-	status = "okay";
+	status = "disabled";
 };
 
 &i2s6_8ch {
-	status = "okay";
+	status = "disabled";
 };
 
 &pcie2x1l0 { 
@@ -854,6 +864,10 @@
 
 &wdt {
     status = "okay";
+};
+
+&chosen {
+    bootargs = "earlycon=uart8250,mmio32,0xfeb50000 console=ttyFIQ0 irqchip.gicv3_pseudo_nmi=0 panic=3 rcupdate.rcu_expedited=1 rcu_nocbs=all";
 };
 
 &gpio0 {
@@ -935,12 +949,12 @@
                 /* GPIO3_B0-B3 */
                 "PIN_33:GPIO13", "", "", "",
                 /* GPIO3_B4-B7 */
-                "", "", "", "",
+                "", "", "", "PIN_31:GPIO11",
 
                 /* GPIO3_C0-C3 */
                 "", "", "", "",
                 /* GPIO3_C4-C7 */
-                "", "", "PIN_31:GPIO11", "",
+                "", "", "", "",
 
                 /* GPIO3_D0-D3 */
                 "", "PIN_22:SPI1_MISO", "PIN_37:SPI1_MOSI", "PIN_13:SPI1_SCK",
