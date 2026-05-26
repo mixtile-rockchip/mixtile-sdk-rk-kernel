@@ -3163,6 +3163,31 @@ static struct of_device_id goodix_ts_dt_ids[] = {
     { }
 };
 
+
+#ifdef CONFIG_PM_SLEEP
+static int goodix_pm_suspend(struct device *dev)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct goodix_ts_data *ts = i2c_get_clientdata(client);
+    if (ts && !ts->gtp_is_suspend)
+        goodix_ts_early_suspend(&ts->tp);
+    return 0;
+}
+
+static int goodix_pm_resume(struct device *dev)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct goodix_ts_data *ts = i2c_get_clientdata(client);
+    if (ts && ts->gtp_is_suspend)
+        goodix_ts_early_resume(&ts->tp);
+    return 0;
+}
+#endif
+
+static const struct dev_pm_ops goodix_pm_ops = {
+    SET_SYSTEM_SLEEP_PM_OPS(goodix_pm_suspend, goodix_pm_resume)
+};
+
 static struct i2c_driver goodix_ts_driver = {
     .probe      = goodix_ts_probe,
     .remove     = goodix_ts_remove,
@@ -3170,6 +3195,7 @@ static struct i2c_driver goodix_ts_driver = {
     .driver = {
         .name     = GTP_I2C_NAME,
 	 .of_match_table = of_match_ptr(goodix_ts_dt_ids),
+        .pm       = &goodix_pm_ops,
     },
 };
 
