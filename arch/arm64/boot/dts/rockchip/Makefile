@@ -303,6 +303,7 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576-vehicle-evb-v20-linux.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576-vehicle-evb-v20-ufs.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576-vehicle-evb-v21.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576-vehicle-evb-v21-mcu.dtb
+dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576s-focalcrest-az08.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576s-evb1-v10.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576s-evb1-v10-linux.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3576s-rk809-tablet-v10.dtb
