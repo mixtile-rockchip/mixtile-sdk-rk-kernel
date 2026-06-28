@@ -418,6 +418,7 @@ static void sco_sock_cleanup_listen(struct sock *parent)
 	while ((sk = bt_accept_dequeue(parent, NULL))) {
 		sco_sock_close(sk);
 		sco_sock_kill(sk);
+		sock_put(sk);
 	}
 
 	parent->sk_state  = BT_CLOSED;
@@ -711,6 +712,7 @@ static int sco_sock_accept(struct socket *sock, struct socket *newsock,
 	newsock->state = SS_CONNECTED;
 
 	BT_DBG("new socket %p", ch);
+	sock_put(ch);
 
 done:
 	release_sock(sk);

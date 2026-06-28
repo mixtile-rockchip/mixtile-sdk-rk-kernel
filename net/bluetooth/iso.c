@@ -722,6 +722,7 @@ static void iso_sock_cleanup_listen(struct sock *parent)
 	while ((sk = bt_accept_dequeue(parent, NULL))) {
 		iso_sock_close(sk);
 		iso_sock_kill(sk);
+		sock_put(sk);
 	}
 
 	/* If listening socket has a hcon, properly disconnect it */
@@ -1289,6 +1290,7 @@ static int iso_sock_accept(struct socket *sock, struct socket *newsock,
 	newsock->state = SS_CONNECTED;
 
 	BT_DBG("new socket %p", ch);
+	sock_put(ch);
 
 done:
 	release_sock(sk);

@@ -376,6 +376,7 @@ static int l2cap_sock_accept(struct socket *sock, struct socket *newsock,
 	newsock->state = SS_CONNECTED;
 
 	BT_DBG("new socket %p", nsk);
+	sock_put(nsk);
 
 done:
 	release_sock(sk);
@@ -1437,7 +1438,7 @@ static void l2cap_sock_cleanup_listen(struct sock *parent)
 	BT_DBG("parent %p state %s", parent,
 	       state_to_string(parent->sk_state));
 
-	/* Close not yet accepted channels */
+	/* The dequeue reference protects each child through channel cleanup. */
 	while ((sk = bt_accept_dequeue(parent, NULL))) {
 		struct l2cap_chan *chan = l2cap_pi(sk)->chan;
 
@@ -1453,6 +1454,7 @@ static void l2cap_sock_cleanup_listen(struct sock *parent)
 
 		l2cap_chan_unlock(chan);
 		l2cap_chan_put(chan);
+		sock_put(sk);
 	}
 }
 
