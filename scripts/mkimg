@@ -246,7 +246,19 @@ if [ "${srctree}" != "${objtree}" ]; then
 		cp -a ${LOGO_KERNEL_PATH} ${objtree}/;
 	fi
 fi
-scripts/resource_tool ${DTB_PATH} ${LOGO} ${LOGO_KERNEL} >/dev/null
+
+ALT_DTB="mixtile-core3588e-test#gpio0c5=0.dtb"
+RESOURCE_DTBS="${DTB_PATH}"
+
+case "${DTB}" in
+	mixtile-vision1-v3*)
+		if [ -f "${objtree}/arch/${ARCH}/boot/dts/rockchip/${ALT_DTB}" ]; then
+			RESOURCE_DTBS="${RESOURCE_DTBS} ${objtree}/arch/${ARCH}/boot/dts/rockchip/${ALT_DTB}"
+		fi
+		;;
+esac
+
+scripts/resource_tool ${RESOURCE_DTBS} ${LOGO} ${LOGO_KERNEL} >/dev/null
 echo "  Image:  resource.img (with ${DTB} ${LOGO} ${LOGO_KERNEL}) is ready"
 
 if [ -f "${BOOT_IMG}" ]; then
