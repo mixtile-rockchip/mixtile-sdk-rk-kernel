@@ -247,12 +247,12 @@ if [ "${srctree}" != "${objtree}" ]; then
 	fi
 fi
 
-ALT_DTB="mixtile-core3588e-test#gpio0c5=0.dtb"
+ALT_DTB="${ALT_DTB:-}"
 RESOURCE_DTBS="${DTB_PATH}"
 
 case "${DTB}" in
 	mixtile-vision1-v3*)
-		if [ -f "${objtree}/arch/${ARCH}/boot/dts/rockchip/${ALT_DTB}" ]; then
+		if [ -n "${ALT_DTB}" ] && [ -f "${objtree}/arch/${ARCH}/boot/dts/rockchip/${ALT_DTB}" ]; then
 			RESOURCE_DTBS="${RESOURCE_DTBS} ${objtree}/arch/${ARCH}/boot/dts/rockchip/${ALT_DTB}"
 		fi
 		;;
