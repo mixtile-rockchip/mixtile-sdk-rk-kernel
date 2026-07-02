@@ -472,6 +472,18 @@ config TOUCHSCREEN_HYCON_HY46XX
 config TOUCHSCREEN_HYN
 	tristate "HYN touchscreens support"
 
+config TOUCHSCREEN_ILI2116
+	tristate "Ilitek ILI2116/ILI2117 I2C touchscreen controller"
+	depends on I2C
+	help
+	  Say Y here if you have an Ilitek ILI2116 or ILI2117 based
+	  touchscreen controller connected via I2C.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ili2116.
+
 config TOUCHSCREEN_ILI210X
 	tristate "Ilitek ILI210X based touchscreen"
 	depends on I2C
