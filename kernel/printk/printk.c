@@ -3201,10 +3201,8 @@ static bool console_flush_all(bool do_cond_resched, u64 *next_seq, bool *handove
 			if (flags & CON_NBCON) {
 				progress = nbcon_legacy_emit_next_record(con, handover, cookie,
 									 !do_cond_resched);
-				printk_seq = nbcon_seq_read(con);
 			} else {
 				progress = console_emit_next_record(con, handover, cookie);
-				printk_seq = con->seq;
 			}
 
 			/*
@@ -3213,6 +3211,12 @@ static bool console_flush_all(bool do_cond_resched, u64 *next_seq, bool *handove
 			 */
 			if (*handover)
 				return false;
+
+			/* @con is still protected by the SRCU read lock here. */
+			if (flags & CON_NBCON)
+				printk_seq = nbcon_seq_read(con);
+			else
+				printk_seq = con->seq;
 
 			/* Track the next of the highest seq flushed. */
 			if (printk_seq > *next_seq)
