@@ -675,7 +675,6 @@ static int rockchip_interrupts_register(struct rockchip_pin_bank *bank)
 	if (ret) {
 		dev_err(bank->dev, "could not alloc generic chips for bank %s\n",
 			bank->name);
-		irq_domain_remove(bank->domain);
 		return -EINVAL;
 	}
 
@@ -737,6 +736,42 @@ static int rockchip_interrupts_register(struct rockchip_pin_bank *bank)
 	return 0;
 }
 
+static void rockchip_irq_domain_remove(struct rockchip_pin_bank *bank)
+{
+	unsigned int irq;
+	int i;
+
+	if (!bank->domain)
+		return;
+
+	for (i = 0; i < RK_GPIO_BANK_MAX_PIN; i++) {
+		irq = irq_find_mapping(bank->domain, i);
+		if (irq)
+			irq_dispose_mapping(irq);
+	}
+	irq_domain_remove_generic_chips(bank->domain);
+	irq_domain_remove(bank->domain);
+	bank->domain = NULL;
+}
+
+static void rockchip_gpiolib_unregister(struct rockchip_pin_bank *bank)
+{
+	int i;
+
+	for (i = 0; i < RK_GPIO_IRQ_MAX_NUM; i++) {
+		if (i && !bank->irq_pins[i])
+			continue;
+		irq_set_chained_handler_and_data(bank->irq[i], NULL, NULL);
+	}
+	for (i = 0; i < RK_GPIO_IRQ_MAX_NUM; i++) {
+		if (i && !bank->irq_pins[i])
+			continue;
+		synchronize_irq(bank->irq[i]);
+	}
+	gpiochip_remove(&bank->gpio_chip);
+	rockchip_irq_domain_remove(bank);
+}
+
 static int rockchip_gpiolib_register(struct rockchip_pin_bank *bank)
 {
 	struct gpio_chip *gc;
@@ -780,6 +815,7 @@ static int rockchip_gpiolib_register(struct rockchip_pin_bank *bank)
 
 fail:
 	gpiochip_remove(&bank->gpio_chip);
+	rockchip_irq_domain_remove(bank);
 
 	return ret;
 }
@@ -1107,6 +1143,13 @@ static void rockchip_gpio_remove_cpuhp(void)
 	mutex_unlock(&irq_affinity_mutex);
 }
 
+static void rockchip_clk_put(void *data)
+{
+	struct clk *clk = data;
+
+	clk_put(clk);
+}
+
 static int rockchip_gpio_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -1161,6 +1204,10 @@ static int rockchip_gpio_probe(struct platform_device *pdev)
 				dev_err(dev, "fail to get apb clock\n");
 				return PTR_ERR(bank->clk);
 			}
+			ret = devm_add_action_or_reset(dev, rockchip_clk_put,
+						       bank->clk);
+			if (ret)
+				return ret;
 		}
 
 		bank->db_clk = devm_clk_get(dev, "db");
@@ -1168,6 +1215,12 @@ static int rockchip_gpio_probe(struct platform_device *pdev)
 			bank->db_clk = of_clk_get(dev->of_node, 1);
 			if (IS_ERR(bank->db_clk))
 				bank->db_clk = NULL;
+			else {
+				ret = devm_add_action_or_reset(dev, rockchip_clk_put,
+							       bank->db_clk);
+				if (ret)
+					return ret;
+			}
 		}
 	}
 
@@ -1206,7 +1259,7 @@ static int rockchip_gpio_probe(struct platform_device *pdev)
 					     gc->base, gc->ngpio);
 		if (ret) {
 			dev_err(bank->dev, "Failed to add pin range\n");
-			goto err_unlock;
+			goto err_remove;
 		}
 	}
 
@@ -1245,6 +1298,8 @@ static int rockchip_gpio_probe(struct platform_device *pdev)
 	dev_info(dev, "probed %pfw\n", dev_fwnode(dev));
 
 	return 0;
+err_remove:
+	rockchip_gpiolib_unregister(bank);
 err_unlock:
 	mutex_lock(&irq_affinity_mutex);
 	list_for_each_entry_safe(entry, tmp, &irq_affinity_list, list) {
@@ -1279,12 +1334,12 @@ static void rockchip_gpio_remove(struct platform_device *pdev)
 	mutex_unlock(&irq_affinity_mutex);
 	rockchip_gpio_remove_cpuhp();
 
+	rockchip_gpiolib_unregister(bank);
 	clk_disable_unprepare(bank->clk);
 	if (bitmap_empty(bank->db_clk_bitmap, RK_GPIO_BANK_MAX_PIN))
 		clk_unprepare(bank->db_clk);
 	else
 		clk_disable_unprepare(bank->db_clk);
-	gpiochip_remove(&bank->gpio_chip);
 }
 
 static const struct of_device_id rockchip_gpio_match[] = {
