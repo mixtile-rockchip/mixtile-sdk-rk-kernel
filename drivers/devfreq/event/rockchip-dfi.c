@@ -547,13 +547,14 @@ static int rockchip_dfi_clk_disable(struct rockchip_dfi *info)
 }
 static int rockchip_dfi_disable(struct devfreq_event_dev *edev)
 {
-	int ret;
 	struct rockchip_dfi *info = devfreq_event_get_drvdata(edev);
 
-	ret = rockchip_dfi_clk_enable(info);
-	if (ret)
-		return ret;
-
+	/*
+	 * The clocks are already on: rockchip_dfi_enable() keeps them enabled
+	 * for the whole time the event is enabled, so that the DDR monitor
+	 * registers stay accessible (e.g. to the userspace rk-msch-probe
+	 * bandwidth tool). Just stop the counters and drop that reference.
+	 */
 	rockchip_dfi_stop_hardware_counter(edev);
 	rockchip_dfi_clk_disable(info);
 
@@ -572,7 +573,13 @@ static int rockchip_dfi_enable(struct devfreq_event_dev *edev)
 	rockchip_dfi_get_mon_version(edev);
 
 	rockchip_dfi_start_hardware_counter(edev);
-	rockchip_dfi_clk_disable(info);
+
+	/*
+	 * Keep pclk_ddr_mon_chx enabled while the event is enabled. Gating them
+	 * between accesses makes the DDR monitor registers unreadable from
+	 * userspace (/dev/mem), which breaks the rk-msch-probe bandwidth tool.
+	 * The reference taken here is released in rockchip_dfi_disable().
+	 */
 
 	return 0;
 }
