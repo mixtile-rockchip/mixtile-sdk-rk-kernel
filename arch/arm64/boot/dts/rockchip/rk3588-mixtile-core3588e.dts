@@ -17,6 +17,7 @@
 #include "rk3588.dtsi"
 #include "rk3588-rk806-single.dtsi"
 #include "rk3588-linux.dtsi"
+#include "rk3588-mixtile-core3588e-imx219.dtsi"
 
 / {
 	model = "Mixtile Core 3588E";
@@ -48,42 +49,25 @@
 		};
 	};
 
-	adc_keys: adc-keys {
+	recovery_key: recovery-key {
 		compatible = "adc-keys";
 		io-channels = <&saradc 1>;
 		io-channel-names = "buttons";
 		keyup-threshold-microvolt = <1800000>;
 		poll-interval = <100>;
 
-		vol-up-key {
-			label = "volume up";
+		recovery {
+			label = "recovery";
 			linux,code = <KEY_VOLUMEUP>;
 			press-threshold-microvolt = <17000>;
-		};
-
-		vol-down-key {
-			label = "volume down";
-			linux,code = <KEY_VOLUMEDOWN>;
-			press-threshold-microvolt = <417000>;
-		};
-
-		menu-key {
-			label = "menu";
-			linux,code = <KEY_MENU>;
-			press-threshold-microvolt = <890000>;
-		};
-
-		back-key {
-			label = "back";
-			linux,code = <KEY_BACK>;
-			press-threshold-microvolt = <1235000>;
 		};
 	};
 
 	gpio-leds {
 		compatible = "gpio-leds";
 
-		pwr-led {
+		sys_status_led: sys-status-led {
+			label = "sys_status_led";
 			gpios = <&gpio3 RK_PB6 GPIO_ACTIVE_HIGH>;
 			default-state = "on";
 			linux,default-trigger = "heartbeat";
@@ -831,12 +815,7 @@
 };
 
 &i2s0_8ch {
-	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2s0_lrck
-	             &i2s0_sclk
-	             &i2s0_sdi0
-	             &i2s0_sdo0>;
+	status = "disabled";
 };
 
 &i2s5_8ch {
