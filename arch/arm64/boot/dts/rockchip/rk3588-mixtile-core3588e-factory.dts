@@ -788,6 +788,10 @@
 	status = "okay";
 };
 
+&secure_otp {
+	status = "okay";
+};
+
 &spi0 {
 	status = "disabled";
 };
