@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
  * Copyright (c) 2026 Rockchip Electronics Co., Ltd.
- * Copyright (c) 2026 FocalCrest.
+ * Copyright (c) 2026 Focalcrest Co., Ltd.
  */
 
 /dts-v1/;
@@ -116,23 +116,13 @@
 		vin-supply = <&vcc12v_19v>;
 	};
 
-	vcc_2v0_pldo_s3: vcc-2v0-pldo-s3 {
+	vcc_2v1_pldo_s3: vcc-2v1-pldo-s3 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc_2v0_pldo_s3";
+		regulator-name = "vcc_2v1_pldo_s3";
 		regulator-boot-on;
 		regulator-always-on;
-		regulator-min-microvolt = <2000000>;
-		regulator-max-microvolt = <2000000>;
-		vin-supply = <&vcc_sys>;
-	};
-
-	vcc_1v1_nldo_s3: vcc-1v1-nldo-s3 {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_1v1_nldo_s3";
-		regulator-boot-on;
-		regulator-always-on;
-		regulator-min-microvolt = <1100000>;
-		regulator-max-microvolt = <1100000>;
+		regulator-min-microvolt = <2100000>;
+		regulator-max-microvolt = <2100000>;
 		vin-supply = <&vcc_sys>;
 	};
 
@@ -154,7 +144,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		enable-active-high;
-		gpio = <&gpio2 RK_PB1 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio2 RK_PB2 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&buck_3v3_en>;
 		vin-supply = <&vcc_sys>;
@@ -168,7 +158,7 @@
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		enable-active-high;
-		gpio = <&gpio2 RK_PB2 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio2 RK_PB3 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&buck_1v8_en>;
 		vin-supply = <&vcc_sys>;
@@ -430,6 +420,10 @@
 	pinctrl-0 = <&pmic_pins>, <&rk806_dvs1_null>, <&rk806_dvs2_null>, <&rk806_dvs3_null>;
 	pinctrl-1 = <&rk806_dvs1_pwrdn>;
 
+	vcc11-supply = <&vcc_2v1_pldo_s3>;
+	vcc13-supply = <&vcc_2v1_pldo_s3>;
+	vcc14-supply = <&vcc_2v1_pldo_s3>;
+
 	pwron-on-time-500ms;
 };
 
@@ -500,11 +494,11 @@
 
 	power {
 		buck_3v3_en: buck-3v3-en {
-			rockchip,pins = <2 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <2 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 
 		buck_1v8_en: buck-1v8-en {
-			rockchip,pins = <2 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <2 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 
 		audio_3v3_en: audio-3v3-en {
@@ -572,7 +566,7 @@
 
 &saradc {
 	status = "okay";
-	vref-supply = <&vcca_1v8_s0>;
+	vref-supply = <&vcca1v8_pldo2_s0>;
 };
 
 &sai1 {
@@ -625,20 +619,6 @@
 	vmmc-supply = <&vcc3v3_sd>;
 	vqmmc-supply = <&vccio_sd_s0>;
 	status = "okay";
-};
-
-&spi1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi1m1_csn0 &spi1m1_pins>;
-	status = "okay";
-
-        flash@0 {
-                compatible = "jedec,spi-nor";
-                reg = <0>;
-                spi-max-frequency = <10000000>;
-                #address-cells = <1>;
-                #size-cells    = <1>;
-        };
 };
 
 &spi3 {
