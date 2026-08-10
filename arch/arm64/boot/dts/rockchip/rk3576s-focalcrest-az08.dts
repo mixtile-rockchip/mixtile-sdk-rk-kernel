@@ -644,7 +644,6 @@
 };
 
 &u2phy0_otg {
-	vbus-supply = <&vbus5v0_typec>;
 	status = "okay";
 };
 
@@ -653,8 +652,7 @@
 };
 
 &u2phy1_otg {
-	rockchip,typec-vbus-det;
-	vbus-supply = <&vbus5v0_host>;
+	phy-supply = <&vbus5v0_host>;
 	status = "okay";
 };
 
@@ -677,14 +675,13 @@
 };
 
 &usb_drd0_dwc3 {
-	dr_mode = "otg";
+	dr_mode = "peripheral";
 	extcon = <&u2phy0>;
 	status = "okay";
 };
 
 &usb_drd1_dwc3 {
 	dr_mode = "host";
-	extcon = <&u2phy1>;
 	status = "okay";
 };
 
