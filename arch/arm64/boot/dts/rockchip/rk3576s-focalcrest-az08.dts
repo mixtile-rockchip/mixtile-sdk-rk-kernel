@@ -16,7 +16,7 @@
 #include "rk3576-linux.dtsi"
 
 / {
-	model = "FocalCrest AZ08";
+	model = "Focalcrest AZ08";
 	compatible = "rockchip,rk3576s-focalcrest-az08", "rockchip,rk3576s";
 
 	boot_key: boot-key {
