@@ -249,10 +249,8 @@
 		compatible = "bluetooth-platdata";
 		clocks = <&hym8563>;
 		clock-names = "ext_clock";
-		uart_rts_gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_LOW>;
-		pinctrl-names = "default", "rts_gpio";
+		pinctrl-names = "default";
 		pinctrl-0 = <&uart6m1_rtsn>;
-		pinctrl-1 = <&uart6_gpios>;
 		BT,reset_gpio    = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
 		BT,wake_gpio     = <&gpio1 RK_PA6 GPIO_ACTIVE_HIGH>;
 		BT,wake_host_irq = <&gpio1 RK_PA5 GPIO_ACTIVE_HIGH>;
@@ -778,7 +776,7 @@
 };
 
 &pcie3x4 {
-	pinctrl-0 = <&pcie30x4m2_pins>;
+	pinctrl-0 = <&pcie30x4m2_clkreq_wake>;
 	pinctrl-names = "default";
 	reset-gpios = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie30>;
@@ -803,10 +801,16 @@
 			rockchip,pins =
 				/* pcie30x1_0_clkreqn_m2 */
 				<1 RK_PB5 4 &pcfg_pull_none>,
-				/* pcie30x1_0_perstn_m2 */
-				<1 RK_PB4 4 &pcfg_pull_none>,
 				/* pcie30x1_0_waken_m2 */
 				<1 RK_PB3 4 &pcfg_pull_none>;
+		};
+
+		pcie30x4m2_clkreq_wake: pcie30x4m2-clkreq-wake {
+			rockchip,pins =
+				/* pcie30x4_clkreqn_m2 */
+				<3 RK_PC4 4 &pcfg_pull_none>,
+				/* pcie30x4_waken_m2 */
+				<3 RK_PC5 4 &pcfg_pull_none>;
 		};
 	};
 
@@ -823,12 +827,6 @@
 	hym8563 {
 		hym8563_int: hym8563-int {
 			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-
-	wireless-bluetooth {
-		uart6_gpios: uart6-gpios {
-			rockchip,pins = <1 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
