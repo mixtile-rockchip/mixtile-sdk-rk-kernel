@@ -397,7 +397,35 @@
 &rockchip_suspend {
 	status = "okay";
 	rockchip,sleep-debug-en = <1>;
-	rockchip,sleep-mode-config = <0x4000024>;
+	rockchip,sleep-mode-config = <
+		(0
+		| RKPM_SLP_ARMOFF_DDRPD
+		| RKPM_SLP_PMU_PMUALIVE_32K
+		| RKPM_SLP_PMU_DIS_OSC
+		)
+	>;
+	rockchip,wakeup-config = <
+		(0
+		| RKPM_GPIO_WKUP_EN
+		| RKPM_CPU0_WKUP_EN
+		)
+	>;
+};
+
+&vdd_log_s0 {
+	regulator-state-mem {
+		/delete-property/ regulator-off-in-suspend;
+		/delete-property/ regulator-suspend-microvolt;
+		regulator-on-in-suspend;
+	};
+};
+
+&vcc_1v8_s0 {
+	regulator-state-mem {
+		/delete-property/ regulator-off-in-suspend;
+		/delete-property/ regulator-suspend-microvolt;
+		regulator-on-in-suspend;
+	};
 };
 
 &saradc {
@@ -474,11 +502,11 @@
 };
 
 &usbhost3_0 {
-	status = "okay";
+	status = "disabled";
 };
 
 &usbhost_dwc3_0 {
-	status = "okay";
+	status = "disabled";
 };
 
 &combphy2_psu {
