@@ -554,6 +554,14 @@ static struct rtable *icmp_route_lookup(struct net *net, struct flowi4 *fl4,
 		dst_release(&rt2->dst);
 		rt2 = skb_rtable(skb_in);
 		skb_in->_skb_refdst = orefdst; /* restore old refdst */
+
+		/* Input-only routes cannot be used to send this ICMP reply. */
+		if (!err && rt2 &&
+		    (rt2->rt_type == RTN_LOCAL ||
+		     rt2->rt_type == RTN_UNREACHABLE)) {
+			dst_release(&rt2->dst);
+			err = -EINVAL;
+		}
 	}
 
 	if (err)
