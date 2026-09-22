@@ -25,7 +25,7 @@
 		compatible = "adc-keys";
 		io-channels = <&saradc 0>;
 		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <1800000>;
+		keyup-threshold-microvolt = <1700000>;
 		poll-interval = <100>;
 
 		boot {
@@ -40,7 +40,7 @@
 		compatible = "adc-keys";
 		io-channels = <&saradc 1>;
 		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <1800000>;
+		keyup-threshold-microvolt = <1700000>;
 		poll-interval = <100>;
 
 		recovery {
@@ -112,6 +112,8 @@
 		enable-active-high;
 		gpio = <&gpio4 RK_PA4 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc4v0_sys>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vcca_3v3_en>;
 	};
 
 	vcca_1v8: vcca-1v8 {
@@ -124,9 +126,11 @@
 		enable-active-high;
 		gpio = <&gpio4 RK_PA3 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc4v0_sys>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vcca_1v8_en>;
 	};
 
-	vcc5v0_sys: vcc5v0-sys {
+	vcc5v0_sys: vcc_5v0: vcc5v0-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc5v0_sys";
 		regulator-always-on;
@@ -136,16 +140,8 @@
 		enable-active-high;
 		gpio = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc12v0_dcin>;
-	};
-
-	vcc_5v0: vcc-5v0 {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_5v0";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		vin-supply = <&vcc5v0_sys>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vcc5v0_sys_en>;
 	};
 
 	vcc5v0_fan: vcc5v0-fan {
@@ -186,7 +182,7 @@
 		regulator-boot-on;
 		regulator-min-microvolt = <1100000>;
 		regulator-max-microvolt = <1100000>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 	};
 
 	vcc_3v3_s0: vcc-3v3-s0 {
@@ -202,10 +198,12 @@
 	vcc_3v3_sd_s3: vcc-3v3-sd-s3 {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_3v3_sd_s3";
-		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio0 RK_PD3 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sdmmc_pwr>;
 		vin-supply = <&vcc_3v3_s3>;
 	};
 
@@ -251,6 +249,8 @@
 		gpios = <&gpio3 RK_PC5 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <5000>;
 		vin-supply = <&vcc12v0_dcin>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vcc3v3_pcie20_en>;
 	};
 
 	vcc5v0_mipi0: vcc5v0-mipi0 {
@@ -263,6 +263,8 @@
 		enable-active-high;
 		regulator-boot-on;
 		regulator-always-on;
+		pinctrl-names = "default";
+		pinctrl-0 = <&mipi0_pwren>;
 	};
 
 	vcc5v0_mipi1: vcc5v0-mipi1 {
@@ -275,18 +277,8 @@
 		enable-active-high;
 		regulator-boot-on;
 		regulator-always-on;
-	};
-
-	vcc_audio: vcc-audio {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_audio";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc_5v0>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
+		pinctrl-names = "default";
+		pinctrl-0 = <&mipi1_pwren>;
 	};
 
 	dp-con {
@@ -329,14 +321,15 @@
 		rockchip,mclk-fs = <256>;
 		rockchip,cpu = <&i2s0_8ch>;
 		rockchip,codec = <&es8388>;
+		spk-con-gpio = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&audio_mute>;
                 rockchip,audio-routing =
                         "Headphone", "LOUT1",
                         "Headphone", "ROUT1",
                         "Speaker", "LOUT2",
                         "Speaker", "ROUT2",
                         "Headphone", "Headphone Power",
-                        "Headphone", "Headphone Power",
-                        "Speaker", "Speaker Power",
                         "Speaker", "Speaker Power",
                         "LINPUT1", "Headset Mic",
                         "RINPUT1", "Headset Mic",
@@ -413,7 +406,6 @@
                 | RKPM_SLP_ARMOFF_DDRPD
                 | RKPM_SLP_PMU_PMUALIVE_32K
                 | RKPM_SLP_PMU_DIS_OSC
-                | RKPM_SLP_32K_EXT
                 )
         >;
         rockchip,wakeup-config = <
@@ -492,7 +484,7 @@
 	vdd_cpu_big0_s0: vdd_cpu_big0_mem_s0: rk8602@42 {
 		compatible = "rockchip,rk8602";
 		reg = <0x42>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 		regulator-compatible = "rk860x-reg";
 		regulator-name = "vdd_cpu_big0_s0";
 		regulator-min-microvolt = <550000>;
@@ -509,7 +501,7 @@
 	vdd_cpu_big1_s0: vdd_cpu_big1_mem_s0: rk8603@43 {
 		compatible = "rockchip,rk8603";
 		reg = <0x43>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 		regulator-compatible = "rk860x-reg";
 		regulator-name = "vdd_cpu_big1_s0";
 		regulator-min-microvolt = <550000>;
@@ -605,7 +597,7 @@
 	vdd_npu_s0: vdd_npu_mem_s0: rk8602@42 {
 		compatible = "rockchip,rk8602";
 		reg = <0x42>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 		regulator-compatible = "rk860x-reg";
 		regulator-name = "vdd_npu_s0";
 		regulator-min-microvolt = <550000>;
@@ -709,21 +701,21 @@
 		 */
 		pmic-reset-func = <1>;
 
-		vcc1-supply = <&vcc5v0_sys>;
-		vcc2-supply = <&vcc5v0_sys>;
-		vcc3-supply = <&vcc5v0_sys>;
-		vcc4-supply = <&vcc5v0_sys>;
-		vcc5-supply = <&vcc5v0_sys>;
-		vcc6-supply = <&vcc5v0_sys>;
-		vcc7-supply = <&vcc5v0_sys>;
-		vcc8-supply = <&vcc5v0_sys>;
-		vcc9-supply = <&vcc5v0_sys>;
-		vcc10-supply = <&vcc5v0_sys>;
+		vcc1-supply = <&vcc4v0_sys>;
+		vcc2-supply = <&vcc4v0_sys>;
+		vcc3-supply = <&vcc4v0_sys>;
+		vcc4-supply = <&vcc4v0_sys>;
+		vcc5-supply = <&vcc4v0_sys>;
+		vcc6-supply = <&vcc4v0_sys>;
+		vcc7-supply = <&vcc4v0_sys>;
+		vcc8-supply = <&vcc4v0_sys>;
+		vcc9-supply = <&vcc4v0_sys>;
+		vcc10-supply = <&vcc4v0_sys>;
 		vcc11-supply = <&vcc_2v0_pldo_s3>;
-		vcc12-supply = <&vcc5v0_sys>;
+		vcc12-supply = <&vcc4v0_sys>;
 		vcc13-supply = <&vcc_1v1_nldo_s3>;
 		vcc14-supply = <&vcc_1v1_nldo_s3>;
-		vcca-supply = <&vcc5v0_sys>;
+		vcca-supply = <&vcc4v0_sys>;
 
 		pwrkey {
 			status = "okay";
@@ -1062,7 +1054,6 @@
 
 &i2s0_8ch {
     status = "okay";
-    rockchip,clk-trcm = <1>;
     pinctrl-0 = <&i2s0_lrck
              &i2s0_sclk
              &i2s0_sdi0
@@ -1238,6 +1229,8 @@
 };
 
 &rkvenc0 {
+	venc-supply = <&vdd_vdenc_s0>;
+	mem-supply = <&vdd_vdenc_mem_s0>;
 	status = "okay";
 };
 
@@ -1246,6 +1239,8 @@
 };
 
 &rkvenc1 {
+	venc-supply = <&vdd_vdenc_s0>;
+	mem-supply = <&vdd_vdenc_mem_s0>;
 	status = "okay";
 };
 
@@ -1481,15 +1476,15 @@
                 pinctrl-names = "default";
                 pinctrl-0 = <&mipi0_rst_gpio>;
                 prepare-delay-ms = <0>;
-                reset-delay-ms = <0>;
-                init-delay-ms = <0>;
+                reset-delay-ms = <10>;
+                init-delay-ms = <10>;
                 enable-delay-ms = <0>;
                 disable-delay-ms = <0>;
                 unprepare-delay-ms = <0>;
 		bpc = <8>;
                 width-mm = <154>;
                 height-mm = <86>;
-                dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM )>;
+                dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET)>;
                 dsi,format = <MIPI_DSI_FMT_RGB888>;
                 dsi,lanes = <4>;
 
@@ -1595,7 +1590,7 @@
 	rockchip,lane-rate = <348>;
         status = "okay";
 
-        dsi1_panel: panel@1 {
+        dsi1_panel: panel@0 {
                 status = "okay";
 		compatible = "simple-panel-dsi";
                 reg = <0>;
@@ -1605,8 +1600,8 @@
                 pinctrl-names = "default";
                 pinctrl-0 = <&mipi1_rst_gpio>;
                 prepare-delay-ms = <0>;
-                reset-delay-ms = <0>;
-                init-delay-ms = <0>;
+                reset-delay-ms = <10>;
+                init-delay-ms = <10>;
                 enable-delay-ms = <0>;
                 disable-delay-ms = <0>;
                 unprepare-delay-ms = <0>;
@@ -1716,6 +1711,7 @@
 	status = "okay";
 	assigned-clocks = <&cru ACLK_VOP>;
 	assigned-clock-rates = <800000000>;
+	vop-supply = <&vdd_log_s0>;
 };
 
 &vop_mmu {
@@ -1760,9 +1756,33 @@
 		};
 	};
 
-	headphone {
-		hp_det: hp-det {
-			rockchip,pins = <1 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
+	regulator {
+		vcc5v0_sys_en: vcc5v0-sys-en {
+			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		vcca_1v8_en: vcca-1v8-en {
+			rockchip,pins = <4 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		vcca_3v3_en: vcca-3v3-en {
+			rockchip,pins = <4 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		vcc3v3_pcie20_en: vcc3v3-pcie20-en {
+			rockchip,pins = <3 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	sdmmc {
+		sdmmc_pwr: sdmmc-pwr {
+			rockchip,pins = <0 RK_PD3 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	audio {
+		audio_mute: audio-mute {
+			rockchip,pins = <4 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
@@ -1819,12 +1839,20 @@
                         rockchip,pins = <3 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>,
 					<1 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
                 };
+
+                mipi0_pwren: mipi0-pwren {
+                        rockchip,pins = <1 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
+                };
         };
 
         mipi1 {
                 mipi1_rst_gpio: mipi1-rst-gpio {
                         rockchip,pins = <3 RK_PB4 RK_FUNC_GPIO &pcfg_pull_none>,
 					<1 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
+                };
+
+                mipi1_pwren: mipi1-pwren {
+                        rockchip,pins = <1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
                 };
         };
 
