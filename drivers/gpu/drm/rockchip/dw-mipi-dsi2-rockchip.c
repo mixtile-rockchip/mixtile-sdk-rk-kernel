@@ -534,9 +534,9 @@ static void dw_mipi_dsi2_encoder_atomic_disable(struct drm_encoder *encoder,
 			drm_panel_disable(dsi2->panel);
 	}
 
-	rockchip_drm_crtc_standby(encoder->crtc, 1);
-
 	dw_mipi_dsi2_disable(dsi2);
+
+	rockchip_drm_crtc_standby(encoder->crtc, 1);
 
 	if (!new_crtc_state || !new_crtc_state->self_refresh_active) {
 		if (dsi2->panel)
