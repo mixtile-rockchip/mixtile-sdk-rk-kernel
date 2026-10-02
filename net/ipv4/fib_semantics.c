@@ -493,6 +493,9 @@ size_t fib_nlmsg_size(struct fib_info *fi)
 		for (i = 0; i < fib_info_num_path(fi); i++) {
 			struct fib_nh_common *nhc = fib_info_nhc(fi, i);
 
+			if (!nhc)
+				break;
+
 			if (nhc->nhc_lwtstate) {
 				/* RTA_ENCAP_TYPE */
 				nh_encapsize += lwtunnel_get_encap_size(
