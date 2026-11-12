@@ -434,3 +434,4 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += rv1126bp-evb1-v12-fastboot-emmc.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3588-mixtile-blade3.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3588-mixtile-core3588e.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3588-mixtile-core3588e-factory.dtb
+dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3588-mixtile-core3588e-v2-factory.dtb
